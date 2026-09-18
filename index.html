@@ -95,6 +95,34 @@ textarea{resize:vertical;min-height:90px}
   max-height:58px;
   object-fit:contain;
 }
+
+/* Premium interaction layer: visual enhancement only */
+body{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(37,99,235,.07),transparent 26%),
+    radial-gradient(circle at 92% 8%,rgba(23,54,93,.06),transparent 24%),
+    var(--bg);
+}
+.topbar{
+  background:linear-gradient(120deg,#0b2340 0%,#17365d 55%,#214b7c 100%);
+  box-shadow:0 8px 26px rgba(15,39,69,.18);
+}
+.nav button{transition:transform .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease}
+.nav button:hover{transform:translateX(3px);box-shadow:0 7px 18px rgba(37,99,235,.08)}
+.card,.panel{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.card:hover,.panel:hover{box-shadow:0 16px 38px rgba(15,39,69,.11);border-color:#d7e2f0}
+.metric-card{position:relative;overflow:hidden}
+.metric-card:after{content:"";position:absolute;right:-34px;top:-34px;width:95px;height:95px;border-radius:50%;background:linear-gradient(135deg,rgba(37,99,235,.10),rgba(23,54,93,.02));pointer-events:none}
+.btn{transition:transform .16s ease,box-shadow .16s ease,filter .16s ease}
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,39,69,.12)}
+.btn:active{transform:translateY(0)}
+input,select,textarea{transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+input:focus,select:focus,textarea:focus{border-color:#5b8def!important;box-shadow:0 0 0 4px rgba(37,99,235,.10)!important;outline:none}
+.modal-card{box-shadow:0 28px 80px rgba(7,22,40,.25);border:1px solid rgba(255,255,255,.65)}
+.table tbody tr{transition:background .16s ease}
+.table tbody tr:hover{background:#f8fbff}
+.app-footer{display:none!important}
+.gs-status{padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -193,8 +221,7 @@ textarea{resize:vertical;min-height:90px}
         </div>
       </section>
     </main>
-  </div>
-<footer class="app-footer">created by galih, powered by AI</footer></div>
+  </div></div>
 
 <div id="modal" class="modal hidden">
 <div class="modal-card">
@@ -226,36 +253,28 @@ textarea{resize:vertical;min-height:90px}
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px"><button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button><button class="btn btn-primary">Simpan Data</button></div>
  </form>
 </div></div>
-<div id="doneModal" class="modal hidden"><div class="modal-card" style="width:min(680px,100%)">
- <div class="modal-head"><h3>Selesaikan Meeting / Canvasing</h3><button class="close" onclick="closeDoneModal()">×</button></div>
+<div id="doneModal" class="modal hidden"><div class="modal-card" style="width:min(700px,100%)">
+ <div class="modal-head"><div><h3 id="doneModalTitle">Update Meeting / Canvasing</h3><div class="mini">KIPL dapat memperbarui hasil dan follow-up setelah Admin melakukan Confirm.</div></div><button class="close" onclick="closeDoneModal()">×</button></div>
  <div id="doneInfo" class="detail" style="margin-bottom:14px"></div>
- <div class="field"><label>Catatan Hasil Meeting / Canvasing *</label>
- <textarea id="doneResult" required placeholder="Wajib diisi: hasil pembahasan, kebutuhan customer, keputusan, dan informasi penting lainnya."></textarea></div>
+ <div class="field"><label>Catatan Hasil Meeting / Canvasing <span class="mini">• wajib untuk Done</span></label>
+ <textarea id="doneResult" placeholder="Isi hasil pembahasan, kebutuhan customer, keputusan, dan informasi penting lainnya."></textarea></div>
  <div class="field"><label>Follow-up / Next Action</label>
  <textarea id="doneFollowup" placeholder="Contoh: kirim proposal, follow-up tanggal tertentu, jadwal demo, dll."></textarea></div>
- <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px">
+ <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px;flex-wrap:wrap">
   <button class="btn btn-secondary" onclick="closeDoneModal()">Batal</button>
+  <button class="btn btn-primary" onclick="saveKiplUpdate()">💾 Simpan Update</button>
   <button class="btn btn-success" onclick="submitDone()">✓ Simpan sebagai Done</button>
  </div>
 </div></div><div id="statusModal" class="modal hidden"><div class="modal-card" style="width:min(900px,100%)">
  <div class="modal-head"><h3 id="statusModalTitle">Informasi</h3><button class="close" onclick="closeStatusPopup()">×</button></div>
  <div id="statusModalBody"></div>
-</div></div><div id="doneModal" class="modal hidden"><div class="modal-card" style="width:min(680px,100%)">
- <div class="modal-head"><h3>Selesaikan Meeting / Canvasing</h3><button class="close" onclick="closeDoneModal()">×</button></div>
- <div id="doneInfo" class="detail" style="margin-bottom:14px"></div>
- <div class="field"><label>Catatan Hasil Meeting / Canvasing *</label>
- <textarea id="doneResult" required placeholder="Wajib diisi: hasil pembahasan, kebutuhan customer, keputusan, dan informasi penting lainnya."></textarea></div>
- <div class="field"><label>Follow-up / Next Action</label>
- <textarea id="doneFollowup" placeholder="Contoh: kirim proposal, follow-up tanggal tertentu, jadwal demo, dll."></textarea></div>
- <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px">
-  <button class="btn btn-secondary" onclick="closeDoneModal()">Batal</button>
-  <button class="btn btn-success" onclick="submitDone()">✓ Simpan sebagai Done</button>
- </div>
 </div></div><div id="statusModal" class="modal hidden"><div class="modal-card" style="width:min(900px,100%)">
 <div class="modal-head"><h3 id="statusModalTitle">Informasi</h3><button class="close" onclick="closeStatusPopup()">×</button></div>
 <div id="statusModalBody"></div></div></div><div id="toast" class="toast"></div>
 
 
+<script>
+"use strict";
 function initUTSchoolLogo(){
   var imgs=[
     document.getElementById("utSchoolLogo"),
@@ -271,9 +290,6 @@ function initUTSchoolLogo(){
     };
   });
 }
-
-<script>
-"use strict";
 
 /* =========================================================
    UT SCHOOL CANVASING MANAGEMENT
@@ -576,18 +592,38 @@ function setStatus(id,status){
 function openDoneModal(id){
  var x=data.find(function(a){return a.id===id});
  if(!x||x.status!=="confirmed"){toast("Agenda harus berstatus Confirmed terlebih dahulu.");return}
- doneTargetId=id;$("doneResult").value=x.result||"";$("doneFollowup").value=x.followup||"";
+ doneTargetId=id;
+ $("doneResult").value=x.result||"";
+ $("doneFollowup").value=x.followup||"";
+ $("doneModalTitle").textContent="Update Meeting / Canvasing";
  $("doneInfo").innerHTML="<strong>"+esc(x.customer)+"</strong><div class=\"mini\">📅 "+fmtDate(x.date)+" • ⏰ "+esc(timeRange(x))+" • 📍 "+esc(x.location)+"</div><div class=\"mini\">PIC: "+esc(x.pic)+" • Status: CONFIRMED</div>";
- $("doneModal").classList.remove("hidden");setTimeout(function(){$("doneResult").focus()},50);
+ $("doneModal").classList.remove("hidden");
+ setTimeout(function(){$("doneResult").focus()},50);
 }
 function closeDoneModal(){doneTargetId=null;$("doneModal").classList.add("hidden")}
-function submitDone(){
+function saveKiplUpdate(){
  if(currentUser.username!=="kipl"){toast("Fitur ini khusus user KIPL.");return}
- var result=$("doneResult").value.trim();if(!result){toast("Catatan hasil meeting wajib diisi.");$("doneResult").focus();return}
  var x=data.find(function(a){return a.id===doneTargetId});
  if(!x||x.status!=="confirmed"){closeDoneModal();renderAll();toast("Agenda tidak lagi berstatus Confirmed.");return}
- x.status="done";x.result=result;x.followup=$("doneFollowup").value.trim();x.updated=new Date().toISOString();
- saveData();closeDoneModal();renderAll();toast("Meeting selesai dan hasil berhasil disimpan.");
+ x.result=$("doneResult").value.trim();
+ x.followup=$("doneFollowup").value.trim();
+ x.updated=new Date().toISOString();
+ saveData();closeDoneModal();renderAll();
+ toast("Hasil meeting dan follow-up berhasil diperbarui.");
+ syncUpsert(x);
+}
+function submitDone(){
+ if(currentUser.username!=="kipl"){toast("Fitur ini khusus user KIPL.");return}
+ var result=$("doneResult").value.trim();
+ if(!result){toast("Catatan hasil meeting wajib diisi sebelum status Done.");$("doneResult").focus();return}
+ var x=data.find(function(a){return a.id===doneTargetId});
+ if(!x||x.status!=="confirmed"){closeDoneModal();renderAll();toast("Agenda tidak lagi berstatus Confirmed.");return}
+ x.status="done";
+ x.result=result;
+ x.followup=$("doneFollowup").value.trim();
+ x.updated=new Date().toISOString();
+ saveData();closeDoneModal();renderAll();
+ toast("Meeting selesai dan hasil berhasil disimpan.");
  syncUpsert(x);
 }
 function deletePlan(id){
@@ -604,7 +640,7 @@ function renderRows(rows,full){
  if(!rows.length)return '<div class="empty">Belum ada data.</div>';
  return '<table class="table"><thead><tr><th>Tanggal</th><th>PIC</th><th>Customer</th><th>Lokasi</th><th>Status</th>'+(full?"<th>Akomodasi</th><th>Konsumsi</th><th>Follow-up</th><th>Aksi</th>":"")+'</tr></thead><tbody>'+rows.map(function(x){
    return '<tr><td>'+fmtDate(x.date)+'<br><span class="mini">⏰ '+esc(timeRange(x))+'</span></td><td>'+esc(x.pic)+'</td><td><strong>'+esc(x.customer)+'</strong><br><span class="mini">'+esc(x.info||"")+'</span></td><td>'+esc(x.location)+'</td><td>'+timelineHTML(x)+'<div style="margin-top:6px">'+statusBadge(x.status)+'</div></td>'+
-   (full?'<td>'+esc(x.accom==="Ya"?(x.accomType||"Ya")+" • "+formatRp(x.accomCost):"Tidak")+'</td><td>'+esc(x.meal==="Ya"?(x.mealType||"Ya")+" • "+x.mealQty+" porsi":"Tidak")+'</td><td>'+esc(x.followup||"-")+'</td><td><div class="actions">'+(currentUser.username==="admin"?'<button class="btn btn-sm btn-secondary" onclick="openModal(\''+x.id+'\')">Edit</button> <button class="btn btn-sm btn-danger" onclick="deletePlan(\''+x.id+'\')">Hapus</button> '+(x.status==="plan"?'<button class="btn btn-sm btn-primary" onclick="setStatus(\''+x.id+'\',\'confirmed\')">Confirm</button>':"")+(x.status==="confirmed"?'<button class="btn btn-sm btn-success" onclick="setStatus(\''+x.id+'\',\'done\')">Done</button>':"")+(x.status!=="cancel"?'<button class="btn btn-sm btn-danger" onclick="setStatus(\''+x.id+'\',\'cancel\')">Cancel</button>':""):'')+(currentUser.username==="kipl"&&x.status==="confirmed"?'<button class="btn btn-sm btn-success" onclick="openDoneModal(\''+x.id+'\')">✓ Selesaikan</button>':"")+'<button class="btn btn-sm btn-secondary" onclick="generatePDF(\''+x.id+'\')">PDF</button></div></td>':'')+'</tr>';
+   (full?'<td>'+esc(x.accom==="Ya"?(x.accomType||"Ya")+" • "+formatRp(x.accomCost):"Tidak")+'</td><td>'+esc(x.meal==="Ya"?(x.mealType||"Ya")+" • "+x.mealQty+" porsi":"Tidak")+'</td><td>'+esc(x.followup||"-")+'</td><td><div class="actions">'+(currentUser.username==="admin"?'<button class="btn btn-sm btn-secondary" onclick="openModal(\''+x.id+'\')">Edit</button> <button class="btn btn-sm btn-danger" onclick="deletePlan(\''+x.id+'\')">Hapus</button> '+(x.status==="plan"?'<button class="btn btn-sm btn-primary" onclick="setStatus(\''+x.id+'\',\'confirmed\')">Confirm</button>':"")+(x.status==="confirmed"?'<button class="btn btn-sm btn-success" onclick="setStatus(\''+x.id+'\',\'done\')">Done</button>':"")+(x.status!=="cancel"?'<button class="btn btn-sm btn-danger" onclick="setStatus(\''+x.id+'\',\'cancel\')">Cancel</button>':""):'')+(currentUser.username==="kipl"&&x.status==="confirmed"?'<button class="btn btn-sm btn-primary" onclick="openDoneModal(\''+x.id+'\')">✎ Update</button> <button class="btn btn-sm btn-success" onclick="openDoneModal(\''+x.id+'\')">✓ Selesaikan</button>':"")+'<button class="btn btn-sm btn-secondary" onclick="generatePDF(\''+x.id+'\')">PDF</button></div></td>':'')+'</tr>';
  }).join("")+'</tbody></table>';
 }
 function renderDashboard(){
@@ -667,23 +703,4 @@ function exportCSV(){
  var rows=data.map(function(x){return[x.id,x.pic,x.customer,x.date,x.startTime||"",x.endTime||"",x.location,x.budget||0,x.info,x.status,x.priority,x.accom,x.accomType,x.accomCost,x.meal,x.mealType,x.mealQty,x.result,x.followup,x.created,x.updated]});
  var csv=[cols].concat(rows).map(function(r){return r.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");download("canvasing_utschool.csv","\ufeff"+csv,"text/csv;charset=utf-8;");
 }
-function backupJSON(){download("backup_canvasing_utschool.json",JSON.stringify({version:4,sheetId:SHEET_ID,sheetUrl:SHEET_URL,exportedAt:new Date().toISOString(),data:data},null,2),"application/json")}
-function restoreJSON(e){
- if(currentUser.username!=="admin"){toast("Restore hanya dapat dilakukan Admin.");e.target.value="";return}
- var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var o=JSON.parse(r.result),arr=Array.isArray(o)?o:o.data;if(!Array.isArray(arr))throw Error();if(confirm("Restore "+arr.length+" data? Data saat ini akan diganti.")){data=arr.map(normalizeRecord).filter(Boolean);saveData();renderAll();toast("Restore berhasil.");syncAllToSheet()}}catch(err){toast("File backup tidak valid.")}e.target.value=""};r.readAsText(f);
-}
-function download(name,content,type){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type:type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)}
-function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(function(){t.classList.remove("show")},2400)}
-
-document.addEventListener("DOMContentLoaded",function(){
- initUTSchoolLogo();
- loadData();
- var loginBtn=document.querySelector('#loginView button.btn-primary');
- if(loginBtn)loginBtn.onclick=login;
- if($("loginPass"))$("loginPass").addEventListener("keydown",function(e){if(e.key==="Enter")login()});
- document.querySelectorAll('input[name="accom"],input[name="meal"]').forEach(function(el){el.addEventListener("change",toggleConditional)});
- restoreSession();
-});
-</script>
-</body>
-</html>
+function backupJSON(){download(
