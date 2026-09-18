@@ -134,7 +134,7 @@ input:focus,select:focus,textarea:focus{border-color:#5b8def!important;box-shado
     <p>Manajemen plan, monitoring, dan update hasil meeting/customer.</p>
     <div class="field"><label>Username</label><input id="loginUser" autocomplete="username" placeholder="Masukkan username"></div>
     <div class="field"><label>Password</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Masukkan password"></div>
-    <button class="btn btn-primary btn-block" onclick="login()">Masuk ke Aplikasi</button>
+    <button id="loginButton" type="button" class="btn btn-primary btn-block">Masuk ke Aplikasi</button>
     <div id="loginError" class="error"></div>
     <div class="hint">Gunakan akun yang telah diberikan oleh administrator.</div>
   </div>
@@ -268,9 +268,7 @@ input:focus,select:focus,textarea:focus{border-color:#5b8def!important;box-shado
 </div></div><div id="statusModal" class="modal hidden"><div class="modal-card" style="width:min(900px,100%)">
  <div class="modal-head"><h3 id="statusModalTitle">Informasi</h3><button class="close" onclick="closeStatusPopup()">×</button></div>
  <div id="statusModalBody"></div>
-</div></div><div id="statusModal" class="modal hidden"><div class="modal-card" style="width:min(900px,100%)">
-<div class="modal-head"><h3 id="statusModalTitle">Informasi</h3><button class="close" onclick="closeStatusPopup()">×</button></div>
-<div id="statusModalBody"></div></div></div><div id="toast" class="toast"></div>
+</div></div></div><div id="toast" class="toast"></div>
 
 
 <script>
@@ -494,20 +492,58 @@ function updateRoleUI(){
  $("userRole").textContent=currentUser.role+" • "+currentUser.username.toUpperCase();
  $("avatar").textContent=currentUser.username.charAt(0).toUpperCase();
 }
-function login(){
- var u=($("loginUser").value||"").trim().toLowerCase(),p=$("loginPass").value||"";
- if(!USERS[u]||USERS[u].password!==p){$("loginError").textContent="Username atau password tidak sesuai.";return}
- currentUser={username:u,role:USERS[u].role};
+function utSchoolLogin(){
+ var userEl=$("loginUser"),passEl=$("loginPass"),errorEl=$("loginError");
+ var u=(userEl&&userEl.value?userEl.value:"").trim().toLowerCase();
+ var p=(passEl&&passEl.value?passEl.value:"");
+ if(errorEl)errorEl.textContent="";
+
+ if(!u||!p){
+   if(errorEl)errorEl.textContent="Username dan password wajib diisi.";
+   return false;
+ }
+
+ var account=USERS[u];
+ if(!account||account.password!==p){
+   if(errorEl)errorEl.textContent="Username atau password tidak sesuai.";
+   if(passEl){passEl.focus();passEl.select();}
+   return false;
+ }
+
+ currentUser={username:u,role:account.role};
  try{sessionStorage.setItem("ut_user",JSON.stringify(currentUser))}catch(e){}
- $("loginError").textContent="";
- showApp();
+
+ try{
+   $("loginView").classList.add("hidden");
+   $("appView").classList.remove("hidden");
+   updateRoleUI();
+   initSheetUI();
+   renderAll();
+   if(sheetsConfigured())setTimeout(syncFromSheet,250);
+ }catch(err){
+   console.error("Application startup error:",err);
+   // Keep the authenticated state, but show the app rather than silently failing.
+   $("loginView").classList.add("hidden");
+   $("appView").classList.remove("hidden");
+   if(errorEl)errorEl.textContent="";
+   try{initSheetUI()}catch(_){}
+   try{renderAll()}catch(_){}
+ }
+ return false;
 }
+
+/* Backward-compatible alias for any existing calls to login(). */
+function login(){return utSchoolLogin()}
+window.utSchoolLogin=utSchoolLogin;
+window.login=utSchoolLogin;
+
 function logout(){
  try{sessionStorage.removeItem("ut_user")}catch(e){}
  currentUser=null;
  $("appView").classList.add("hidden");
  $("loginView").classList.remove("hidden");
  $("loginPass").value="";
+ $("loginUser").focus();
 }
 function restoreSession(){
  try{
@@ -703,4 +739,44 @@ function exportCSV(){
  var rows=data.map(function(x){return[x.id,x.pic,x.customer,x.date,x.startTime||"",x.endTime||"",x.location,x.budget||0,x.info,x.status,x.priority,x.accom,x.accomType,x.accomCost,x.meal,x.mealType,x.mealQty,x.result,x.followup,x.created,x.updated]});
  var csv=[cols].concat(rows).map(function(r){return r.map(function(v){return '"'+String(v==null?"":v).replace(/"/g,'""')+'"'}).join(",")}).join("\n");download("canvasing_utschool.csv","\ufeff"+csv,"text/csv;charset=utf-8;");
 }
-function backupJSON(){download(
+function backupJSON(){download("backup_canvasing_utschool.json",JSON.stringify({version:4,sheetId:SHEET_ID,sheetUrl:SHEET_URL,exportedAt:new Date().toISOString(),data:data},null,2),"application/json")}
+function restoreJSON(e){
+ if(currentUser.username!=="admin"){toast("Restore hanya dapat dilakukan Admin.");e.target.value="";return}
+ var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var o=JSON.parse(r.result),arr=Array.isArray(o)?o:o.data;if(!Array.isArray(arr))throw Error();if(confirm("Restore "+arr.length+" data? Data saat ini akan diganti.")){data=arr.map(normalizeRecord).filter(Boolean);saveData();renderAll();toast("Restore berhasil.");syncAllToSheet()}}catch(err){toast("File backup tidak valid.")}e.target.value=""};r.readAsText(f);
+}
+function download(name,content,type){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type:type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(a.href)},1000)}
+function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(function(){t.classList.remove("show")},2400)}
+
+document.addEventListener("DOMContentLoaded",function(){
+ initUTSchoolLogo();
+ loadData();
+
+ var loginBtn=$("loginButton");
+ if(loginBtn){
+   loginBtn.addEventListener("click",function(e){
+     e.preventDefault();
+     utSchoolLogin();
+   });
+ }
+
+ var userInput=$("loginUser"),passInput=$("loginPass");
+ if(userInput){
+   userInput.addEventListener("keydown",function(e){
+     if(e.key==="Enter"){e.preventDefault();utSchoolLogin();}
+   });
+ }
+ if(passInput){
+   passInput.addEventListener("keydown",function(e){
+     if(e.key==="Enter"){e.preventDefault();utSchoolLogin();}
+   });
+ }
+
+ document.querySelectorAll('input[name="accom"],input[name="meal"]').forEach(function(el){
+   el.addEventListener("change",toggleConditional);
+ });
+
+ restoreSession();
+});;
+</script>
+</body>
+</html>
