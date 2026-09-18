@@ -70,6 +70,13 @@ textarea{resize:vertical;min-height:90px}
 .sync-box{border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px;background:#fbfcff}
 .sync-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sync-url{font-size:12px;color:var(--muted);word-break:break-all}
+
+#utSchoolLogo{
+  display:block;max-width:132px;max-height:36px;width:auto;height:auto;object-fit:contain;
+}
+@media (max-width:700px){
+  #utSchoolLogo{max-width:88px;max-height:30px}
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -90,7 +97,7 @@ textarea{resize:vertical;min-height:90px}
 <div id="appView" class="app hidden">
   <header class="topbar">
     <div class="brand">
-      <div class="brand-logo">LOGO</div>
+      <div class="brand-logo"><img id="utSchoolLogo" src="LOGO UTS HITAM.png" alt="Logo UT School">LOGO</div>
       <div><strong>UT School Canvasing</strong><small>Customer Meeting Management</small></div>
     </div>
     <div class="userbox"><span id="gsStatus" class="gs-status"><i id="gsDot" class="gs-dot"></i><span id="gsStatusText">Local</span></span><span id="userRole"></span><div id="avatar" class="avatar">A</div><button class="btn btn-secondary" onclick="logout()">Keluar</button></div>
@@ -232,14 +239,14 @@ textarea{resize:vertical;min-height:90px}
 
 
 function initUTSchoolLogo(){
-  document.querySelectorAll("[data-ut-logo]").forEach(function(img){
-    img.src=UT_SCHOOL_LOGO_SRC;
-    img.alt="UT School";
-    img.onerror=function(){
-      img.style.visibility="hidden";
-      console.warn("Logo tidak ditemukan: "+UT_SCHOOL_LOGO_SRC);
-    };
-  });
+  var img=document.getElementById("utSchoolLogo");
+  if(!img)return;
+  img.src=UT_SCHOOL_LOGO_SRC;
+  img.alt="Logo UT School";
+  img.onerror=function(){
+    img.style.visibility="hidden";
+    console.warn("Logo tidak ditemukan: "+UT_SCHOOL_LOGO_SRC);
+  };
 }
 
 <script>
@@ -648,4 +655,12 @@ function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");c
 document.addEventListener("DOMContentLoaded",function(){
  initUTSchoolLogo();
  loadData();
- var loginBtn=document.querySe
+ var loginBtn=document.querySelector('#loginView button.btn-primary');
+ if(loginBtn)loginBtn.onclick=login;
+ if($("loginPass"))$("loginPass").addEventListener("keydown",function(e){if(e.key==="Enter")login()});
+ document.querySelectorAll('input[name="accom"],input[name="meal"]').forEach(function(el){el.addEventListener("change",toggleConditional)});
+ restoreSession();
+});
+</script>
+</body>
+</html>
