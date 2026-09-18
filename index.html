@@ -76,7 +76,7 @@ textarea{resize:vertical;min-height:90px}
 <body>
 <div id="loginView" class="login">
   <div class="login-card">
-    <div class="LOGO UTS HITAM.png">LOGO UTS HITAM.png</div>
+    <div class="logo-space">SPACE LOGO UT SCHOOL</div>
     <h1>Canvasing Management</h1>
     <p>Manajemen plan, monitoring, dan update hasil meeting/customer.</p>
     <div class="field"><label>Username</label><input id="loginUser" autocomplete="username" placeholder="Masukkan username"></div>
@@ -230,6 +230,18 @@ textarea{resize:vertical;min-height:90px}
 <div class="modal-head"><h3 id="statusModalTitle">Informasi</h3><button class="close" onclick="closeStatusPopup()">×</button></div>
 <div id="statusModalBody"></div></div></div><div id="toast" class="toast"></div>
 
+
+function initUTSchoolLogo(){
+  document.querySelectorAll("[data-ut-logo]").forEach(function(img){
+    img.src=UT_SCHOOL_LOGO_SRC;
+    img.alt="UT School";
+    img.onerror=function(){
+      img.style.visibility="hidden";
+      console.warn("Logo tidak ditemukan: "+UT_SCHOOL_LOGO_SRC);
+    };
+  });
+}
+
 <script>
 "use strict";
 
@@ -243,6 +255,7 @@ const KEY="utschool_canvasing_v3";
 const SHEET_URL="https://docs.google.com/spreadsheets/d/1v2eGJ8jdl3_9F3nqe0YPuld13NN1fWPYRFbRevL4nGU/edit?usp=sharing";
 const SHEET_ID=(SHEET_URL.match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1]||"";
 const APPS_SCRIPT_URL="https://script.google.com/macros/s/AKfycbwLdBxjSUG452lDS1G5l2OddZIohP6rc_a8a4Afcv9_EaX0rm3u2aPf83Y-4-sggq22/exec";
+const UT_SCHOOL_LOGO_SRC="LOGO UTS HITAM.png";
 
 let currentUser=null,data=[],doneTargetId=null;
 let syncInProgress=false;
@@ -633,13 +646,6 @@ function download(name,content,type){var a=document.createElement("a");a.href=UR
 function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window.__toast);window.__toast=setTimeout(function(){t.classList.remove("show")},2400)}
 
 document.addEventListener("DOMContentLoaded",function(){
+ initUTSchoolLogo();
  loadData();
- var loginBtn=document.querySelector('#loginView button.btn-primary');
- if(loginBtn)loginBtn.onclick=login;
- if($("loginPass"))$("loginPass").addEventListener("keydown",function(e){if(e.key==="Enter")login()});
- document.querySelectorAll('input[name="accom"],input[name="meal"]').forEach(function(el){el.addEventListener("change",toggleConditional)});
- restoreSession();
-});
-</script>
-</body>
-</html>
+ var loginBtn=document.querySe
