@@ -145,6 +145,93 @@ input:focus,select:focus,textarea:focus{border-color:var(--uts-blue)!important;b
 .event{border-left:4px solid var(--uts-blue);background:linear-gradient(90deg,#F3F8FC,#fff)}
 .modal-card{border-top:4px solid var(--uts-yellow);box-shadow:0 28px 80px rgba(11,35,64,.22)}
 .avatar{background:linear-gradient(135deg,var(--uts-blue),var(--uts-navy));border:2px solid rgba(247,230,0,.75)}
+
+/* UT School logo-side header refinement */
+.topbar{
+  display:flex;
+  align-items:stretch;
+  padding:0 18px 0 0;
+  background:linear-gradient(110deg,#0B2340 0%,#17365D 58%,#245A8F 100%);
+  border-bottom:3px solid #F7E600;
+}
+.topbar .brand{
+  min-height:68px;
+  padding:8px 24px 8px 18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  position:relative;
+  overflow:hidden;
+  background:linear-gradient(105deg,#FFFFFF 0%,#F8FBFE 55%,#DCECF9 100%);
+  border-radius:0 24px 24px 0;
+  box-shadow:10px 0 26px rgba(0,0,0,.12);
+}
+.topbar .brand:after{
+  content:"";
+  position:absolute;
+  right:-18px;
+  top:0;
+  bottom:0;
+  width:36px;
+  background:linear-gradient(90deg,rgba(220,236,249,.9),rgba(23,54,93,0));
+  transform:skewX(-12deg);
+  pointer-events:none;
+}
+.topbar .brand strong{color:#17365D}
+.topbar .brand small{color:#49637D}
+.topbar .brand-logo{
+  position:relative;
+  z-index:1;
+  background:#FFFFFF;
+  border:1px solid #D7E5F1;
+  box-shadow:0 4px 12px rgba(23,54,93,.12);
+}
+.topbar .brand-logo img{
+  filter:none;
+}
+.topbar .userbox{
+  margin-left:auto;
+}
+@media (max-width:700px){
+  .topbar{padding-right:8px}
+  .topbar .brand{
+    min-height:62px;
+    padding:7px 14px 7px 10px;
+    gap:8px;
+    border-radius:0 18px 18px 0;
+  }
+  .topbar .brand>div:nth-child(2){display:none}
+}
+
+/* Meeting date/time refinement */
+.date-cell{
+  min-width:150px;
+  vertical-align:top;
+  padding-top:15px!important;
+}
+.meeting-date{
+  display:block;
+  color:#17365D;
+  font-size:15px;
+  font-weight:800;
+  letter-spacing:.1px;
+  line-height:1.25;
+}
+.meeting-time{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin-top:6px;
+  color:#5B7188;
+  font-size:12px;
+  font-weight:600;
+  line-height:1.35;
+  white-space:nowrap;
+}
+.meeting-time::first-letter{font-size:13px}
+.table tbody tr:hover .meeting-date{color:#1F5A9D}
+.table tbody tr:hover .meeting-time{color:#17365D}
+.event strong{color:#17365D}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -335,11 +422,28 @@ function fmtDate(s){
  if(p.length!==3)return String(s);
  return p[2]+"/"+p[1]+"/"+p[0];
 }
+function extractMeetingTime(value){
+ var v=value==null?"":String(value).trim();
+ if(!v)return "";
+ var iso=v.match(/T(\d{2}):(\d{2})/);
+ if(iso)return iso[1]+":"+iso[2];
+ var hm=v.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+ if(hm)return String(hm[1]).padStart(2,"0")+":"+hm[2];
+ var num=Number(v);
+ if(isFinite(num)&&num>=0&&num<1){
+   var total=Math.round(num*24*60);
+   var hh=Math.floor(total/60)%24, mm=total%60;
+   return String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+ }
+ return "";
+}
 function timeRange(x){
- var st=x&&x.startTime?String(x.startTime):"";
- var en=x&&x.endTime?String(x.endTime):"";
- if(!st&&!en)return "-";
- return (st||"-")+" - "+(en||"-")+" WIB (UTC+07:00)";
+ var st=extractMeetingTime(x&&x.startTime);
+ var en=extractMeetingTime(x&&x.endTime);
+ if(st&&en)return st+" - "+en+" WIB";
+ if(st)return st+" WIB";
+ if(en)return en+" WIB";
+ return "-";
 }
 function meetingDistance(x){
  var today=new Date(); today.setHours(0,0,0,0);
@@ -720,7 +824,7 @@ function timelineHTML(x){
 function renderRows(rows,full){
  if(!rows.length)return '<div class="empty">Belum ada data.</div>';
  return '<table class="table"><thead><tr><th>Tanggal</th><th>PIC</th><th>Customer</th><th>Lokasi</th><th>Status</th>'+(full?"<th>Akomodasi</th><th>Konsumsi</th><th>Follow-up</th><th>Aksi</th>":"")+'</tr></thead><tbody>'+rows.map(function(x){
-   return '<tr><td>'+fmtDate(x.date)+'<br><span class="mini">⏰ '+esc(timeRange(x))+'</span></td><td>'+esc(x.pic)+'</td><td><strong>'+esc(x.customer)+'</strong><br><span class="mini">'+esc(x.info||"")+'</span></td><td>'+esc(x.location)+'</td><td>'+timelineHTML(x)+'<div style="margin-top:6px">'+statusBadge(x.status)+'</div></td>'+
+   return '<tr><td class="date-cell"><strong class="meeting-date">'+fmtDate(x.date)+'</strong><span class="meeting-time">⏰ '+esc(timeRange(x))+'</span></td><td>'+esc(x.pic)+'</td><td><strong>'+esc(x.customer)+'</strong><br><span class="mini">'+esc(x.info||"")+'</span></td><td>'+esc(x.location)+'</td><td>'+timelineHTML(x)+'<div style="margin-top:6px">'+statusBadge(x.status)+'</div></td>'+
    (full?'<td>'+esc(x.accom==="Ya"?(x.accomType||"Ya")+" • "+formatRp(x.accomCost):"Tidak")+'</td><td>'+esc(x.meal==="Ya"?(x.mealType||"Ya")+" • "+x.mealQty+" porsi":"Tidak")+'</td><td>'+esc(x.followup||"-")+'</td><td><div class="actions">'+(currentUser.username==="admin"?'<button class="btn btn-sm btn-secondary" onclick="openModal(\''+x.id+'\')">Edit</button> <button class="btn btn-sm btn-danger" onclick="deletePlan(\''+x.id+'\')">Hapus</button> '+(x.status==="plan"?'<button class="btn btn-sm btn-primary" onclick="setStatus(\''+x.id+'\',\'confirmed\')">Confirm</button>':"")+(x.status==="confirmed"?'<button class="btn btn-sm btn-success" onclick="setStatus(\''+x.id+'\',\'done\')">Done</button>':"")+(x.status!=="cancel"?'<button class="btn btn-sm btn-danger" onclick="setStatus(\''+x.id+'\',\'cancel\')">Cancel</button>':""):'')+(currentUser.username==="kipl"&&x.status==="confirmed"?'<button class="btn btn-sm btn-primary" onclick="openDoneModal(\''+x.id+'\')">✎ Update</button> <button class="btn btn-sm btn-success" onclick="openDoneModal(\''+x.id+'\')">✓ Selesaikan</button>':"")+'<button class="btn btn-sm btn-secondary" onclick="generatePDF(\''+x.id+'\')">PDF</button></div></td>':'')+'</tr>';
  }).join("")+'</tbody></table>';
 }
@@ -730,7 +834,7 @@ function renderDashboard(){
  var pct=total?Math.round(done/total*100):0;$("progressBar").style.width=pct+"%";$("progressText").textContent=pct+"%";
  $("statusBreakdown").innerHTML='<div class="mini">Plan '+plan+' • Confirmed '+con+' • Done '+done+' • Cancel '+cancel+'</div>';
  var upcoming=data.filter(function(x){return x.date&&x.status!=="cancel"}).sort(sortNearestMeeting).slice(0,5);
- $("upcoming").innerHTML=upcoming.length?upcoming.map(function(x){return '<div class="event"><strong>'+fmtDate(x.date)+' · '+esc(x.customer)+'</strong><div>'+esc(x.location)+' · ⏰ '+esc(timeRange(x))+' · '+statusBadge(x.status)+'</div><small>PIC: '+esc(x.pic)+'</small></div>'}).join(""):'<div class="empty">Belum ada agenda.</div>';
+ $("upcoming").innerHTML=upcoming.length?upcoming.map(function(x){return '<div class="event"><strong>'+fmtDate(x.date)+' · '+esc(x.customer)+'</strong><div class="event-time">⏰ '+esc(timeRange(x))+' · '+esc(x.location)+' · '+statusBadge(x.status)+'</div><small>PIC: '+esc(x.pic)+'</small></div>'}).join(""):'<div class="empty">Belum ada agenda.</div>';
  $("recentTable").innerHTML=renderRows(data.slice().sort(function(a,b){return b.updated.localeCompare(a.updated)}).slice(0,6),false);
 }
 function renderTable(){
