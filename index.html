@@ -464,6 +464,8 @@ function extractMeetingTime(value){
  return generic?String(generic[1]).padStart(2,"0")+":"+generic[2]:"";
 }
 function timeRange(x){
+ // IMPORTANT: display only the normalized Google Sheets E/F values:
+ // E = startTime, F = endTime.
  var st=extractMeetingTime(x&&x.startTime);
  var en=extractMeetingTime(x&&x.endTime);
  if(st&&en)return st+" - "+en+" WIB";
@@ -525,18 +527,62 @@ function firstDefined(obj,keys){
  }
  return "";
 }
-function normalizeRecord(x){
+function normalizeHeaderName(v){
+ return String(v==null?"":v).trim().toLowerCase().replace(/[\\s_\\-]+/g,"");
+}
+function normalizeRecord(x,headers){
  if(!x)return null;
 
- // The Apps Script may return either normalized keys (startTime/endTime)
- // or the original spreadsheet header names. Prefer the exact startTime/endTime
- // cells and never replace them with another time field.
- var raw=Array.isArray(x)?{
-   id:x[0],pic:x[1],customer:x[2],date:x[3],startTime:x[4],endTime:x[5],
-   location:x[6],budget:x[7],info:x[8],status:x[9],priority:x[10],
-   accom:x[11],accomType:x[12],accomCost:x[13],meal:x[14],mealType:x[15],
-   mealQty:x[16],result:x[17],followup:x[18],created:x[19],updated:x[20]
- }:x;
+ // Google Sheets source of truth:
+ // columns E and F are startTime and endTime. When Apps Script sends headers,
+ // resolve the values by header name first. This prevents a shifted column or
+ // an object-property order from changing the meeting time shown in the app.
+ var raw;
+ if(Array.isArray(x)){
+   if(Array.isArray(headers)&&headers.length){
+     var hmap={};
+     headers.forEach(function(h,i){hmap[normalizeHeaderName(h)]=i});
+     function hv(names,fallback){
+       for(var j=0;j<names.length;j++){
+         var idx=hmap[normalizeHeaderName(names[j])];
+         if(idx!==undefined)return x[idx];
+       }
+       return x[fallback];
+     }
+     raw={
+       id:hv(["id","ID"],0),
+       pic:hv(["pic","PIC"],1),
+       customer:hv(["customer","Nama Customer","Customer"],2),
+       date:hv(["date","Tanggal","Tanggal Meeting","tanggalMeeting"],3),
+       startTime:hv(["startTime","Jam Mulai","Jam mulai"],4),
+       endTime:hv(["endTime","Jam Selesai","Jam selesai"],5),
+       location:hv(["location","Lokasi"],6),
+       budget:hv(["budget","Plan Budget","Budget"],7),
+       info:hv(["info","Informasi","Informasi Rencana Meeting"],8),
+       status:hv(["status","Status"],9),
+       priority:hv(["priority","Prioritas"],10),
+       accom:hv(["accom","Akomodasi"],11),
+       accomType:hv(["accomType","Jenis Akomodasi"],12),
+       accomCost:hv(["accomCost","Biaya Akomodasi"],13),
+       meal:hv(["meal","Konsumsi"],14),
+       mealType:hv(["mealType","Jenis Konsumsi"],15),
+       mealQty:hv(["mealQty","Jumlah"],16),
+       result:hv(["result","Hasil"],17),
+       followup:hv(["followup","Follow-up","Follow Up"],18),
+       created:hv(["created","Created"],19),
+       updated:hv(["updated","Updated"],20)
+     };
+   }else{
+     raw={
+       id:x[0],pic:x[1],customer:x[2],date:x[3],startTime:x[4],endTime:x[5],
+       location:x[6],budget:x[7],info:x[8],status:x[9],priority:x[10],
+       accom:x[11],accomType:x[12],accomCost:x[13],meal:x[14],mealType:x[15],
+       mealQty:x[16],result:x[17],followup:x[18],created:x[19],updated:x[20]
+     };
+   }
+ }else{
+   raw=x;
+ }
 
  var o=Object.assign({},raw);
  o.id=String(firstDefined(raw,["id","ID","Id"])||"");
@@ -635,7 +681,11 @@ function syncFromSheet(){
      toast("Google Sheets mengembalikan data yang tidak valid.");
      return;
    }
-   data=result.data.map(function(row){return normalizeRecord(row)}).filter(Boolean);
+   // Prefer the spreadsheet header mapping returned by Apps Script.
+   // If headers are not supplied, normalizeRecord falls back to the fixed sheet
+   // layout where E=startTime and F=endTime.
+   var sheetHeaders=Array.isArray(result.headers)?result.headers:null;
+   data=result.data.map(function(row){return normalizeRecord(row,sheetHeaders)}).filter(Boolean);
    saveData();
    renderAll();
    setSyncStatus("ok","Google Sheets");
