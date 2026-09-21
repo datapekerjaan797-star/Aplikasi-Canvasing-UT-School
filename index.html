@@ -331,7 +331,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--uts-blue)!important;b
                 <button class="btn btn-primary" onclick="syncFromSheet()">↻ Sync dari Google Sheets</button>
                 <button class="btn btn-secondary" onclick="syncAllToSheet()">↑ Push semua data</button>
               </div>
-              <p id="syncMessage" class="mini" style="margin:10px 0 0">Status: Local Storage</p>
+              <p id="syncMessage" class="mini" style="margin:10px 0 0">Status: Menunggu sync Google Sheets...</p>
             </div>
             <p class="mini" style="margin-top:12px">Catatan: koneksi tulis memakai Google Apps Script Web App agar HTML dapat menyimpan data ke Spreadsheet.</p>
           </div>
@@ -422,45 +422,52 @@ const UT_SCHOOL_LOGO_SRC="LOGO UTS HITAM.png";
 
 let currentUser=null,data=[],doneTargetId=null;
 let syncInProgress=false;
+let sheetSyncState="idle";
 
 function $(id){return document.getElementById(id)}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]})}
 function formatRp(n){return new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n)||0)}
 function fmtDate(s){
  if(!s)return "-";
- var p=String(s).slice(0,10).split("-");
- if(p.length!==3)return String(s);
- return p[2]+"/"+p[1]+"/"+p[0];
+ var v=String(s).trim();
+ // Google Sheets may return a display date as DD/MM/YYYY.
+ var dmy=v.match(/^(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](\\d{4})$/);
+ if(dmy)return String(dmy[1]).padStart(2,"0")+"/"+String(dmy[2]).padStart(2,"0")+"/"+dmy[3];
+ // ISO date: YYYY-MM-DD...
+ var iso=v.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
+ if(iso)return String(iso[3]).padStart(2,"0")+"/"+String(iso[2]).padStart(2,"0")+"/"+iso[1];
+ return v;
 }
 function extractMeetingTime(value){
  var v=value==null?"":String(value).trim();
  if(!v)return "";
 
- // If the sheet cell is already a display value such as 13:30 or 13:30:00,
- // use that exact clock value. No timezone conversion is applied.
- var hm=v.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+ // PRIMARY: Google Sheets display value from column E/F.
+ // Examples: 9:00, 13:30, 14:30, 15:00.
+ var hm=v.match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
  if(hm){
    return String(hm[1]).padStart(2,"0")+":"+hm[2];
  }
 
- // Apps Script serializes a spreadsheet Date/time cell as an ISO UTC value.
- // Example: 1899-12-30T06:30:00.000Z represents 13:30 in WIB.
- var iso=v.match(/^(?:1899-12-30|1899-12-31)T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?Z$/i);
+ // BACKWARD COMPATIBILITY: old Apps Script deployments may still return
+ // a Date serialized as 1899-12-30Txx:mm:ss.000Z. Convert that legacy value
+ // to WIB only when it is unmistakably a time-only date.
+ var iso=v.match(/^(?:1899-12-29|1899-12-30|1899-12-31)T(\\d{2}):(\\d{2})(?::(\\d{2}))?(?:\\.\\d+)?Z$/i);
  if(iso){
    var mins=(Number(iso[1])*60)+Number(iso[2])+420;
    mins=((mins%1440)+1440)%1440;
    return String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
  }
 
- // Handle numeric spreadsheet time fractions without changing the stored value.
+ // Numeric Sheets time fraction fallback.
  var num=Number(v);
  if(isFinite(num)&&num>=0&&num<1){
    var total=Math.round(num*24*60);
    return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
  }
 
- // Fallback for non-standard time text: extract only its clock portion.
- var generic=v.match(/(\d{1,2}):(\d{2})/);
+ // Last-resort legacy text containing a clock value.
+ var generic=v.match(/(?:^|T|\\s)(\\d{1,2}):(\\d{2})(?::\\d{2})?/);
  return generic?String(generic[1]).padStart(2,"0")+":"+generic[2]:"";
 }
 function timeRange(x){
@@ -500,7 +507,7 @@ function setSyncStatus(state,msg){
 }
 function initSheetUI(){
  if($("sheetUrlDisplay"))$("sheetUrlDisplay").textContent=SHEET_URL;
- if(sheetsConfigured())setSyncStatus("ok","Google Sheets");
+ if(sheetsConfigured())setSyncStatus("warn","Menunggu sync...");
  else setSyncStatus("warn","Setup Sheets");
 }
 
@@ -528,7 +535,7 @@ function firstDefined(obj,keys){
  return "";
 }
 function normalizeHeaderName(v){
- return String(v==null?"":v).trim().toLowerCase().replace(/[\\s_\\-]+/g,"");
+ return String(v==null?"":v).trim().toLowerCase().replace(/[\s_\-]+/g,"");
 }
 function normalizeRecord(x,headers){
  if(!x)return null;
@@ -653,7 +660,8 @@ function syncFromSheet(){
  }
  if(syncInProgress)return;
  syncInProgress=true;
- setSyncStatus("warn","Syncing...");
+ sheetSyncState="syncing";
+ setSyncStatus("warn","Memuat Google Sheets...");
  var cb="utSheetCallback_"+Date.now()+"_"+Math.floor(Math.random()*10000);
  var script=document.createElement("script");
  var finished=false;
@@ -662,6 +670,7 @@ function syncFromSheet(){
    finished=true;
    cleanup();
    syncInProgress=false;
+   sheetSyncState="error";
    setSyncStatus("err","Sync timeout");
    toast("Gagal mengambil data dari Google Sheets.");
  },15000);
@@ -677,6 +686,7 @@ function syncFromSheet(){
    cleanup();
    syncInProgress=false;
    if(!result||result.ok!==true||!Array.isArray(result.data)){
+     sheetSyncState="error";
      setSyncStatus("err","Sync gagal");
      toast("Google Sheets mengembalikan data yang tidak valid.");
      return;
@@ -685,9 +695,19 @@ function syncFromSheet(){
    // If headers are not supplied, normalizeRecord falls back to the fixed sheet
    // layout where E=startTime and F=endTime.
    var sheetHeaders=Array.isArray(result.headers)?result.headers:null;
-   data=result.data.map(function(row){return normalizeRecord(row,sheetHeaders)}).filter(Boolean);
+   var synced=result.data.map(function(row){return normalizeRecord(row,sheetHeaders)}).filter(Boolean);
+   if(!synced.length && result.data.length){
+     sheetSyncState="error";
+     setSyncStatus("err","Data Sheet tidak terbaca");
+     toast("Data Google Sheets tidak dapat dipetakan. Data lokal tidak ditimpa.");
+     return;
+   }
+   // Google Sheets is the source of truth. Only replace local cache after a
+   // valid response has been normalized successfully.
+   data=synced;
    saveData();
    renderAll();
+   sheetSyncState="ready";
    setSyncStatus("ok","Google Sheets");
    toast("Sync berhasil: "+data.length+" data.");
  };
@@ -696,8 +716,9 @@ function syncFromSheet(){
    finished=true;
    cleanup();
    syncInProgress=false;
+   sheetSyncState="error";
    setSyncStatus("err","Sync gagal");
-   toast("Tidak dapat mengakses Google Sheets.");
+   toast("Tidak dapat mengakses Google Sheets. Data lokal dipertahankan.");
  };
  script.src=APPS_SCRIPT_URL+"?action=get&sheetId="+encodeURIComponent(SHEET_ID)+"&callback="+encodeURIComponent(cb)+"&_="+Date.now();
  document.head.appendChild(script);
@@ -735,7 +756,9 @@ function showApp(){
  updateRoleUI();
  initSheetUI();
  renderAll();
- if(sheetsConfigured())setTimeout(syncFromSheet,250);
+ if(sheetsConfigured()){
+   setTimeout(syncFromSheet,80);
+ }
 }
 function updateRoleUI(){
  if(!currentUser)return;
@@ -769,7 +792,7 @@ function utSchoolLogin(){
    updateRoleUI();
    initSheetUI();
    renderAll();
-   if(sheetsConfigured())setTimeout(syncFromSheet,250);
+   if(sheetsConfigured())setTimeout(syncFromSheet,80);
  }catch(err){
    console.error("Application startup error:",err);
    // Keep the authenticated state, but show the app rather than silently failing.
