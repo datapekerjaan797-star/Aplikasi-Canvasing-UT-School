@@ -232,6 +232,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--uts-blue)!important;b
 .table tbody tr:hover .meeting-date{color:#1F5A9D}
 .table tbody tr:hover .meeting-time{color:#17365D}
 .event strong{color:#17365D}
+
+/* Meeting time WIB correction */
+.date-cell{min-width:160px;vertical-align:top}
+.meeting-date{display:block;color:#17365D;font-size:15px;font-weight:800;line-height:1.25}
+.meeting-time{display:flex;align-items:center;gap:5px;margin-top:6px;color:#49647F;font-size:12px;font-weight:600;line-height:1.35;white-space:nowrap}
+.table tbody tr:hover .meeting-date{color:#1F5A9D}
+.table tbody tr:hover .meeting-time{color:#17365D}
+
+/* Spreadsheet source indicator */
+#gsStatusText{font-weight:700;letter-spacing:.1px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -425,17 +435,33 @@ function fmtDate(s){
 function extractMeetingTime(value){
  var v=value==null?"":String(value).trim();
  if(!v)return "";
- var iso=v.match(/T(\d{2}):(\d{2})/);
- if(iso)return iso[1]+":"+iso[2];
- var hm=v.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
- if(hm)return String(hm[1]).padStart(2,"0")+":"+hm[2];
+
+ // If the sheet cell is already a display value such as 13:30 or 13:30:00,
+ // use that exact clock value. No timezone conversion is applied.
+ var hm=v.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+ if(hm){
+   return String(hm[1]).padStart(2,"0")+":"+hm[2];
+ }
+
+ // Apps Script serializes a spreadsheet Date/time cell as an ISO UTC value.
+ // Example: 1899-12-30T06:30:00.000Z represents 13:30 in WIB.
+ var iso=v.match(/^(?:1899-12-30|1899-12-31)T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?Z$/i);
+ if(iso){
+   var mins=(Number(iso[1])*60)+Number(iso[2])+420;
+   mins=((mins%1440)+1440)%1440;
+   return String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+ }
+
+ // Handle numeric spreadsheet time fractions without changing the stored value.
  var num=Number(v);
  if(isFinite(num)&&num>=0&&num<1){
    var total=Math.round(num*24*60);
-   var hh=Math.floor(total/60)%24, mm=total%60;
-   return String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+   return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
  }
- return "";
+
+ // Fallback for non-standard time text: extract only its clock portion.
+ var generic=v.match(/(\d{1,2}):(\d{2})/);
+ return generic?String(generic[1]).padStart(2,"0")+":"+generic[2]:"";
 }
 function timeRange(x){
  var st=extractMeetingTime(x&&x.startTime);
@@ -490,31 +516,56 @@ function saveData(){
 
 /* ---------- Google Sheets transport ---------- */
 
+function firstDefined(obj,keys){
+ for(var i=0;i<keys.length;i++){
+   var k=keys[i];
+   if(obj&&Object.prototype.hasOwnProperty.call(obj,k)&&obj[k]!==null&&obj[k]!==undefined&&String(obj[k])!==""){
+     return obj[k];
+   }
+ }
+ return "";
+}
 function normalizeRecord(x){
  if(!x)return null;
- var o=Object.assign({},x);
- o.id=String(o.id||"");
+
+ // The Apps Script may return either normalized keys (startTime/endTime)
+ // or the original spreadsheet header names. Prefer the exact startTime/endTime
+ // cells and never replace them with another time field.
+ var raw=Array.isArray(x)?{
+   id:x[0],pic:x[1],customer:x[2],date:x[3],startTime:x[4],endTime:x[5],
+   location:x[6],budget:x[7],info:x[8],status:x[9],priority:x[10],
+   accom:x[11],accomType:x[12],accomCost:x[13],meal:x[14],mealType:x[15],
+   mealQty:x[16],result:x[17],followup:x[18],created:x[19],updated:x[20]
+ }:x;
+
+ var o=Object.assign({},raw);
+ o.id=String(firstDefined(raw,["id","ID","Id"])||"");
  if(!o.id)return null;
- o.pic=String(o.pic||"");
- o.customer=String(o.customer||"");
- o.date=String(o.date||"");
- o.startTime=String(o.startTime||"");
- o.endTime=String(o.endTime||"");
- o.location=String(o.location||"");
- o.info=String(o.info||"");
- o.status=String(o.status||"plan");
- o.priority=String(o.priority||"Normal");
- o.budget=Number(o.budget||0);
- o.accom=String(o.accom||"Tidak");
- o.accomType=String(o.accomType||"");
- o.accomCost=Number(o.accomCost||0);
- o.meal=String(o.meal||"Tidak");
- o.mealType=String(o.mealType||"");
- o.mealQty=Number(o.mealQty||0);
- o.result=String(o.result||"");
- o.followup=String(o.followup||"");
- o.created=String(o.created||new Date().toISOString());
- o.updated=String(o.updated||new Date().toISOString());
+
+ o.pic=String(firstDefined(raw,["pic","PIC","Pic"])||"");
+ o.customer=String(firstDefined(raw,["customer","Customer","Nama Customer"])||"");
+ o.date=String(firstDefined(raw,["date","Tanggal","Tanggal Meeting","tanggalMeeting"])||"");
+
+ // IMPORTANT: these are the actual spreadsheet cells.
+ // Do not use created/updated/date-time fields as substitutes.
+ o.startTime=String(firstDefined(raw,["startTime","Jam Mulai","jam mulai","Jam mulai"])||"");
+ o.endTime=String(firstDefined(raw,["endTime","Jam Selesai","jam selesai","Jam selesai"])||"");
+
+ o.location=String(firstDefined(raw,["location","Lokasi"])||"");
+ o.info=String(firstDefined(raw,["info","Informasi","Informasi Rencana Meeting"])||"");
+ o.status=String(firstDefined(raw,["status","Status"])||"plan");
+ o.priority=String(firstDefined(raw,["priority","Prioritas"])||"Normal");
+ o.budget=Number(firstDefined(raw,["budget","Plan Budget","Budget"])||0);
+ o.accom=String(firstDefined(raw,["accom","Akomodasi"])||"Tidak");
+ o.accomType=String(firstDefined(raw,["accomType","Jenis Akomodasi"])||"");
+ o.accomCost=Number(firstDefined(raw,["accomCost","Biaya Akomodasi"])||0);
+ o.meal=String(firstDefined(raw,["meal","Konsumsi"])||"Tidak");
+ o.mealType=String(firstDefined(raw,["mealType","Jenis Konsumsi"])||"");
+ o.mealQty=Number(firstDefined(raw,["mealQty","Jumlah"])||0);
+ o.result=String(firstDefined(raw,["result","Hasil"])||"");
+ o.followup=String(firstDefined(raw,["followup","Follow-up","Follow Up"])||"");
+ o.created=String(firstDefined(raw,["created","Created"])||new Date().toISOString());
+ o.updated=String(firstDefined(raw,["updated","Updated"])||new Date().toISOString());
  return o;
 }
 
@@ -584,7 +635,7 @@ function syncFromSheet(){
      toast("Google Sheets mengembalikan data yang tidak valid.");
      return;
    }
-   data=result.data.map(normalizeRecord).filter(Boolean);
+   data=result.data.map(function(row){return normalizeRecord(row)}).filter(Boolean);
    saveData();
    renderAll();
    setSyncStatus("ok","Google Sheets");
