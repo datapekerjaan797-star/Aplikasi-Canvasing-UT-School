@@ -123,6 +123,28 @@ input:focus,select:focus,textarea:focus{border-color:#5b8def!important;box-shado
 .table tbody tr:hover{background:#f8fbff}
 .app-footer{display:none!important}
 .gs-status{padding:5px 9px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10)}
+/* UT School corporate visual refresh */
+:root{--uts-navy:#17365D;--uts-navy-deep:#0B2340;--uts-blue:#1F5A9D;--uts-yellow:#F7E600}
+body{color:#20344D;background:radial-gradient(circle at 0 0,rgba(31,90,157,.09),transparent 28%),radial-gradient(circle at 100% 12%,rgba(247,230,0,.05),transparent 20%),#F5F8FC}
+.topbar{background:linear-gradient(115deg,var(--uts-navy-deep),var(--uts-navy) 58%,#245A8F);border-bottom:3px solid var(--uts-yellow);box-shadow:0 10px 30px rgba(11,35,64,.16)}
+.brand-logo{background:rgba(255,255,255,.96);border-radius:9px;padding:4px 9px;box-shadow:0 5px 16px rgba(0,0,0,.12)}
+.nav button{border-left:3px solid transparent;border-radius:10px;transition:all .18s ease}
+.nav button:hover{color:var(--uts-navy);background:#EDF4FB;border-left-color:var(--uts-yellow);transform:translateX(3px)}
+.nav button.active{color:var(--uts-navy);background:linear-gradient(90deg,#E8F1FA,#F7FAFD);border-left-color:var(--uts-yellow);box-shadow:inset 0 0 0 1px #D8E5F1}
+.card,.panel{border:1px solid #DCE6F0;box-shadow:0 8px 24px rgba(23,54,93,.055);transition:transform .2s ease,box-shadow .2s ease}
+.card:hover,.panel:hover{box-shadow:0 14px 32px rgba(23,54,93,.09);transform:translateY(-1px)}
+.metric-card{background:linear-gradient(145deg,#fff,#F7FAFD);overflow:hidden;position:relative}
+.metric-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--uts-yellow),var(--uts-blue))}
+.btn-primary{background:linear-gradient(135deg,#17365D,#1F5A9D);border-color:#17365D;box-shadow:0 6px 15px rgba(23,54,93,.18)}
+.btn-primary:hover{filter:brightness(1.06);box-shadow:0 10px 22px rgba(23,54,93,.22)}
+.table thead th{background:linear-gradient(180deg,#F0F5FA,#E7EFF7);color:var(--uts-navy);border-bottom:2px solid #C9D8E7}
+.table tbody tr:hover{background:#F4F9FD}
+input,select,textarea{border-color:#D3DFEA;background:#FBFDFF}
+input:focus,select:focus,textarea:focus{border-color:var(--uts-blue)!important;box-shadow:0 0 0 4px rgba(31,90,157,.10)!important}
+.pagehead h2{color:var(--uts-navy)}
+.event{border-left:4px solid var(--uts-blue);background:linear-gradient(90deg,#F3F8FC,#fff)}
+.modal-card{border-top:4px solid var(--uts-yellow);box-shadow:0 28px 80px rgba(11,35,64,.22)}
+.avatar{background:linear-gradient(135deg,var(--uts-blue),var(--uts-navy));border:2px solid rgba(247,230,0,.75)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -307,8 +329,31 @@ let syncInProgress=false;
 function $(id){return document.getElementById(id)}
 function esc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]})}
 function formatRp(n){return new Intl.NumberFormat("id-ID",{style:"currency",currency:"IDR",maximumFractionDigits:0}).format(Number(n)||0)}
-function fmtDate(s){if(!s)return "-";return new Date(s+"T00:00:00").toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"})}
-function timeRange(x){return (x.startTime||"-")+" - "+(x.endTime||"-")}
+function fmtDate(s){
+ if(!s)return "-";
+ var p=String(s).slice(0,10).split("-");
+ if(p.length!==3)return String(s);
+ return p[2]+"/"+p[1]+"/"+p[0];
+}
+function timeRange(x){
+ var st=x&&x.startTime?String(x.startTime):"";
+ var en=x&&x.endTime?String(x.endTime):"";
+ if(!st&&!en)return "-";
+ return (st||"-")+" - "+(en||"-")+" WIB (UTC+07:00)";
+}
+function meetingDistance(x){
+ var today=new Date(); today.setHours(0,0,0,0);
+ if(!x||!x.date)return Number.MAX_SAFE_INTEGER;
+ var d=new Date(String(x.date).slice(0,10)+"T00:00:00");
+ if(isNaN(d.getTime()))return Number.MAX_SAFE_INTEGER;
+ var diff=d.getTime()-today.getTime();
+ return diff>=0 ? diff : 1e15+Math.abs(diff);
+}
+function sortNearestMeeting(a,b){
+ var da=meetingDistance(a),db=meetingDistance(b);
+ if(da!==db)return da-db;
+ return String(a.startTime||"").localeCompare(String(b.startTime||""));
+}
 function statusBadge(s){return '<span class="badge '+s+'">'+(s==="cancel"?"CANCEL":String(s||"").toUpperCase())+"</span>"}
 
 function sheetsConfigured(){
@@ -684,17 +729,17 @@ function renderDashboard(){
  $("mTotal").textContent=total;$("mPlan").textContent=plan;$("mConfirmed").textContent=con;$("mDone").textContent=done;if($("mBudget"))$("mBudget").textContent=formatRp(budget);
  var pct=total?Math.round(done/total*100):0;$("progressBar").style.width=pct+"%";$("progressText").textContent=pct+"%";
  $("statusBreakdown").innerHTML='<div class="mini">Plan '+plan+' • Confirmed '+con+' • Done '+done+' • Cancel '+cancel+'</div>';
- var upcoming=data.filter(function(x){return x.date&&x.status!=="cancel"}).sort(function(a,b){return (a.date+" "+(a.startTime||"")).localeCompare(b.date+" "+(b.startTime||""))}).slice(0,5);
+ var upcoming=data.filter(function(x){return x.date&&x.status!=="cancel"}).sort(sortNearestMeeting).slice(0,5);
  $("upcoming").innerHTML=upcoming.length?upcoming.map(function(x){return '<div class="event"><strong>'+fmtDate(x.date)+' · '+esc(x.customer)+'</strong><div>'+esc(x.location)+' · ⏰ '+esc(timeRange(x))+' · '+statusBadge(x.status)+'</div><small>PIC: '+esc(x.pic)+'</small></div>'}).join(""):'<div class="empty">Belum ada agenda.</div>';
  $("recentTable").innerHTML=renderRows(data.slice().sort(function(a,b){return b.updated.localeCompare(a.updated)}).slice(0,6),false);
 }
 function renderTable(){
  var q=$("search").value.toLowerCase(),s=$("filterStatus").value,m=$("filterMonth").value;
- var rows=data.filter(function(x){return(!q||[x.pic,x.customer,x.location,x.info,x.result,x.followup].join(" ").toLowerCase().indexOf(q)>=0)&&(!s||x.status===s)&&(!m||(x.date||"").startsWith(m))}).sort(function(a,b){return(a.date+" "+(a.startTime||"")).localeCompare(b.date+" "+(b.startTime||""))});
+ var rows=data.filter(function(x){return(!q||[x.pic,x.customer,x.location,x.info,x.result,x.followup].join(" ").toLowerCase().indexOf(q)>=0)&&(!s||x.status===s)&&(!m||(x.date||"").startsWith(m))}).sort(sortNearestMeeting);
  $("dataTable").innerHTML=renderRows(rows,true);
 }
 function renderAgenda(){
- var rows=data.filter(function(x){return x.status!=="cancel"}).sort(function(a,b){return(a.date+" "+(a.startTime||"")).localeCompare(b.date+" "+(b.startTime||""))});
+ var rows=data.filter(function(x){return x.status!=="cancel"}).sort(sortNearestMeeting);
  $("agendaList").innerHTML=rows.length?rows.map(function(x){return '<div class="event" style="margin:0 0 17px;padding-bottom:12px"><div style="display:flex;justify-content:space-between;gap:8px"><strong>'+fmtDate(x.date)+' · '+esc(x.customer)+'</strong>'+statusBadge(x.status)+'</div><div>'+esc(x.location)+' · ⏰ '+esc(timeRange(x))+' · PIC '+esc(x.pic)+'</div><small>'+esc(x.info||"Tidak ada informasi rencana.")+'</small><div class="mini" style="margin-top:6px">Follow-up: '+esc(x.followup||"-")+'</div></div>'}).join(""):'<div class="empty">Belum ada agenda.</div>';
 }
 function renderReports(){
@@ -713,7 +758,7 @@ function renderAll(){
 }
 
 function openStatusPopup(status){
- var rows=data.filter(function(x){return !status||x.status===status}).sort(function(a,b){return(a.date+" "+(a.startTime||"")).localeCompare(b.date+" "+(b.startTime||""))});
+ var rows=data.filter(function(x){return !status||x.status===status}).sort(sortNearestMeeting);
  $("statusModalTitle").textContent=(status?("Agenda "+status.toUpperCase()):"Seluruh Plan")+" ("+rows.length+")";
  $("statusModalBody").innerHTML=rows.length?rows.map(function(x){return '<div class="pop-row"><div style="display:flex;justify-content:space-between;gap:8px"><strong>'+esc(x.customer)+'</strong>'+statusBadge(x.status)+'</div><div class="mini">📅 '+fmtDate(x.date)+' • ⏰ '+esc(timeRange(x))+' • 📍 '+esc(x.location)+'</div><div class="mini">PIC: '+esc(x.pic)+' • '+esc(x.priority)+' • Budget: '+formatRp(x.budget||0)+'</div>'+(x.result?'<div style="margin-top:6px;font-size:13px"><b>Hasil:</b> '+esc(x.result)+'</div>':"")+'</div>'}).join(""):'<div class="empty">Tidak ada data pada kategori ini.</div>';
  $("statusModal").classList.remove("hidden");
