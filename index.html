@@ -964,7 +964,7 @@ function savePlan(e){
  if(id&&!admin){toast("Member hanya dapat menambahkan Plan baru.");return}
  var st=String($("startTime").value||"").trim(),en=String($("endTime").value||"").trim();
  // Keep the exact HH:mm values entered in the form; do not derive time from date/timestamps.
- if((st&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(st))||(en&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(en))){toast("Format jam harus HH:mm.");return}
+ if((st&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(st))||(en&&!/^([01]\d|2[0-3]):[0-5]\d$/.test(en))){toast("Jam mulai dan selesai harus menggunakan format 24 jam, contoh 14:00 dan 15:30.");return}
  if(st&&en&&st>=en){toast("Jam selesai harus lebih besar dari jam mulai.");return}
  var accom=document.querySelector('input[name="accom"]:checked').value;
  var meal=document.querySelector('input[name="meal"]:checked').value;
