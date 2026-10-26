@@ -368,6 +368,48 @@ input:focus,select:focus,textarea:focus{border-color:#4f83b5!important;box-shado
 .trend-empty{display:grid;place-items:center;min-height:170px;color:#75859a;font-size:13px;text-align:center;padding:18px}
 @media(max-width:650px){.trend-head{flex-direction:column}.trend-chart{min-height:180px}.trend-legend{gap:10px}.trend-foot{font-size:10px}}
 
+
+/* V24: enforce accessible contrast for the disabled-looking completion action */
+.actions .action-btn.action-done,
+.actions .action-btn.action-done:link,
+.actions .action-btn.action-done:visited,
+.actions .action-btn.action-done:hover,
+.actions .action-btn.action-done:active,
+.actions .action-btn.action-done:focus,
+.actions .action-btn.action-done:disabled,
+.actions .action-btn.action-done[disabled]{
+  background:#16794b!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+  filter:none!important;
+  border:1px solid #11643d!important;
+  text-shadow:none!important;
+}
+.actions .action-btn.action-done *,
+.actions .action-btn.action-done span,
+.actions .action-btn.action-done .action-icon{
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  opacity:1!important;
+  text-shadow:none!important;
+}
+.actions .action-btn.action-done:disabled,
+.actions .action-btn.action-done[disabled]{
+  cursor:not-allowed;
+}
+.trend-chart svg [data-trend-point]{cursor:crosshair;pointer-events:all}
+.trend-chart svg .trend-hit{fill:transparent;stroke:transparent;stroke-width:18;pointer-events:all;cursor:pointer}
+.trend-tooltip{
+ position:fixed;z-index:99999;display:none;pointer-events:none;min-width:150px;max-width:230px;
+ padding:10px 12px;border-radius:10px;background:#102b49;color:#fff;
+ box-shadow:0 10px 28px rgba(10,28,48,.25);font-size:12px;line-height:1.55;
+ border:1px solid rgba(255,255,255,.15)
+}
+.trend-tooltip strong{display:block;color:#ffd84a;font-size:12px;margin-bottom:4px}
+.trend-tooltip .tip-row{display:flex;justify-content:space-between;gap:14px;white-space:nowrap}
+.trend-tooltip .tip-value{font-weight:800;color:#fff}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -524,6 +566,7 @@ input:focus,select:focus,textarea:focus{border-color:#4f83b5!important;box-shado
 </div></div></div><div id="toast" class="toast"></div>
 
 
+<div id="trendTooltip" class="trend-tooltip" role="status" aria-live="polite"></div>
 <script>
 "use strict";
 function initUTSchoolLogo(){
@@ -1106,6 +1149,36 @@ function trendMonthLabel(key){
  var p=key.split("-");
  return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString("id-ID",{month:"short",year:"2-digit"});
 }
+function bindTrendTooltip(chart){
+ var tip=$("trendTooltip");
+ if(!chart||!tip)return;
+ var points=chart.querySelectorAll("[data-trend-point]");
+ function show(point,clientX,clientY){
+   tip.innerHTML='<strong>'+esc(point.getAttribute("data-month")||"")+'</strong>'+
+    '<div class="tip-row"><span>Kunjungan</span><span class="tip-value">'+esc(point.getAttribute("data-visits")||"0")+'</span></div>'+
+    '<div class="tip-row"><span>Customer unik</span><span class="tip-value">'+esc(point.getAttribute("data-customers")||"0")+'</span></div>';
+   tip.style.display="block";
+   var x=clientX+14,y=clientY+14;
+   var rect=tip.getBoundingClientRect();
+   if(x+rect.width>window.innerWidth-8)x=clientX-rect.width-14;
+   if(y+rect.height>window.innerHeight-8)y=clientY-rect.height-14;
+   tip.style.left=Math.max(8,x)+"px";tip.style.top=Math.max(8,y)+"px";
+ }
+ points.forEach(function(point){
+   point.setAttribute("tabindex","0");
+   point.setAttribute("role","img");
+   point.setAttribute("aria-label",(point.getAttribute("data-month")||"")+", "+(point.getAttribute("data-visits")||"0")+" kunjungan, "+(point.getAttribute("data-customers")||"0")+" customer unik");
+   point.addEventListener("pointerenter",function(e){show(point,e.clientX,e.clientY)});
+   point.addEventListener("pointermove",function(e){if(tip.style.display==="block")show(point,e.clientX,e.clientY)});
+   point.addEventListener("pointerleave",function(){tip.style.display="none"});
+   point.addEventListener("focus",function(){
+     var r=point.getBoundingClientRect();show(point,r.left+r.width/2,r.top+r.height/2);
+   });
+   point.addEventListener("blur",function(){tip.style.display="none"});
+   point.addEventListener("click",function(e){show(point,e.clientX||point.getBoundingClientRect().left,e.clientY||point.getBoundingClientRect().top)});
+ });
+}
+
 function renderCustomerTrend(){
  var chart=$("customerTrendChart");
  if(!chart)return;
@@ -1145,11 +1218,15 @@ function renderCustomerTrend(){
  var labels=values.map(function(v,i){return '<text x="'+xAt(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="10" fill="#617287">'+esc(v.label)+'</text>'}).join("");
  var dots="";
  values.forEach(function(v,i){
-   var x=xAt(i);
-   dots+='<circle cx="'+x+'" cy="'+yAt(v.visits)+'" r="4.5" fill="#17365d" stroke="#ffffff" stroke-width="2"><title>'+esc(v.label)+': '+v.visits+' kunjungan</title></circle>';
-   dots+='<circle cx="'+x+'" cy="'+yAt(v.customers)+'" r="4" fill="#f0bd00" stroke="#ffffff" stroke-width="2"><title>'+esc(v.label)+': '+v.customers+' customer unik</title></circle>';
+   var x=xAt(i),yv=yAt(v.visits),yc=yAt(v.customers);
+   var label=esc(v.label);
+   dots+='<circle class="trend-hit" data-trend-point="1" data-month="'+label+'" data-visits="'+v.visits+'" data-customers="'+v.customers+'" cx="'+x+'" cy="'+yv+'" r="7" fill="transparent"><title>'+label+' | '+v.visits+' kunjungan | '+v.customers+' customer unik</title></circle>';
+   dots+='<circle cx="'+x+'" cy="'+yv+'" r="4.5" fill="#17365d" stroke="#ffffff" stroke-width="2" pointer-events="none"/>';
+   dots+='<circle class="trend-hit" data-trend-point="1" data-month="'+label+'" data-visits="'+v.visits+'" data-customers="'+v.customers+'" cx="'+x+'" cy="'+yc+'" r="7" fill="transparent"><title>'+label+' | '+v.visits+' kunjungan | '+v.customers+' customer unik</title></circle>';
+   dots+='<circle cx="'+x+'" cy="'+yc+'" r="4" fill="#f0bd00" stroke="#ffffff" stroke-width="2" pointer-events="none"/>';
  });
- chart.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><defs><linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#17365d" stop-opacity=".16"/><stop offset="100%" stop-color="#17365d" stop-opacity="0"/></linearGradient></defs>'+grid+'<polygon points="'+L+','+(T+plotH)+' '+lineFor("visits")+' '+(W-R)+','+(T+plotH)+'" fill="url(#trendArea)"/><polyline points="'+lineFor("visits")+'" fill="none" stroke="#17365d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+lineFor("customers")+'" fill="none" stroke="#f0bd00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4"/>'+dots+labels+'</svg>';
+ chart.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" aria-label="Grafik trend kunjungan customer enam bulan terakhir"><defs><linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#17365d" stop-opacity=".16"/><stop offset="100%" stop-color="#17365d" stop-opacity="0"/></linearGradient></defs>'+grid+'<polygon points="'+L+','+(T+plotH)+' '+lineFor("visits")+' '+(W-R)+','+(T+plotH)+'" fill="url(#trendArea)"/><polyline points="'+lineFor("visits")+'" fill="none" stroke="#17365d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/><polyline points="'+lineFor("customers")+'" fill="none" stroke="#f0bd00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4" pointer-events="none"/>'+dots+labels+'</svg>';
+ bindTrendTooltip(chart);
  var totalVisits=values.reduce(function(a,v){return a+v.visits},0);
  var latest=values[values.length-1];
  $("trendSummary").textContent="6 bulan terakhir: "+totalVisits+" kunjungan • Bulan terbaru: "+latest.visits+" kunjungan / "+latest.customers+" customer unik";
