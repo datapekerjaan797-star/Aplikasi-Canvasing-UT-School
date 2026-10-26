@@ -334,6 +334,40 @@ input:focus,select:focus,textarea:focus{border-color:#4f83b5!important;box-shado
  .actions{min-width:240px}
 }
 
+
+/* V23: high contrast for completion action */
+.actions .action-done,
+.actions .action-done:visited,
+.actions .action-done:hover,
+.actions .action-done:focus{
+  background:#16794b!important;
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  border:1px solid #11643d!important;
+  text-shadow:0 1px 1px rgba(0,0,0,.18);
+  opacity:1!important;
+}
+.actions .action-done span,
+.actions .action-done .action-icon{
+  color:#ffffff!important;
+  -webkit-text-fill-color:#ffffff!important;
+  opacity:1!important;
+}
+.trend-panel{overflow:hidden}
+.trend-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:10px}
+.trend-head h3{margin:0 0 5px}
+.trend-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:#50637a;font-size:11px;font-weight:700}
+.trend-legend span{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.legend-dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+.legend-dot.visits{background:#17365d}
+.legend-dot.customers{background:#f0bd00}
+.trend-chart{width:100%;min-height:230px}
+.trend-chart svg{display:block;width:100%;height:auto;max-height:300px;overflow:visible}
+.trend-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid #e2e9f1;padding-top:10px;color:#51657b;font-size:11px}
+.trend-note{color:#8290a1}
+.trend-empty{display:grid;place-items:center;min-height:170px;color:#75859a;font-size:13px;text-align:center;padding:18px}
+@media(max-width:650px){.trend-head{flex-direction:column}.trend-chart{min-height:180px}.trend-legend{gap:10px}.trend-foot{font-size:10px}}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -381,6 +415,14 @@ input:focus,select:focus,textarea:focus{border-color:#4f83b5!important;box-shado
         <div class="grid">
           <div class="panel"><h3>Progress Canvasing</h3><div class="kpi-row"><div style="flex:1"><div class="bar"><i id="progressBar" style="width:0%"></i></div></div><strong id="progressText">0%</strong></div><div style="margin-top:13px" id="statusBreakdown"></div></div>
           <div class="panel"><h3>Agenda Terdekat</h3><div id="upcoming" class="timeline"></div></div>
+        </div>
+        <div class="panel trend-panel" style="margin-top:18px">
+          <div class="trend-head">
+            <div><h3>Trend Kunjungan Customer</h3><p class="mini">Jumlah agenda canvasing per bulan, tidak termasuk agenda yang dibatalkan.</p></div>
+            <div class="trend-legend"><span><i class="legend-dot visits"></i>Kunjungan</span><span><i class="legend-dot customers"></i>Customer unik</span></div>
+          </div>
+          <div id="customerTrendChart" class="trend-chart" role="img" aria-label="Grafik trend kunjungan customer per bulan"></div>
+          <div class="trend-foot"><span id="trendSummary">Ringkasan kunjungan customer</span><span class="trend-note">Sumber: data canvasing</span></div>
         </div>
         <div class="panel" style="margin-top:18px"><h3>Plan Terbaru</h3><div id="recentTable"></div></div>
       </section>
@@ -1051,6 +1093,68 @@ function renderRows(rows,full){
    (full?'<td>'+esc(x.accom==="Ya"?(x.accomType||"Ya")+" • "+formatRp(x.accomCost):"Tidak")+'</td><td>'+esc(x.meal==="Ya"?(x.mealType||"Ya")+" • "+x.mealQty+" porsi":"Tidak")+'</td><td>'+esc(x.followup||"-")+'</td><td><div class="actions">'+(currentUser.username==="admin"?'<button type="button" class="btn btn-sm btn-secondary action-btn action-edit" title="Edit agenda" aria-label="Edit agenda" onclick="openModal(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">✎</span><span>Edit</span></button><button type="button" class="btn btn-sm btn-danger action-btn action-delete" title="Hapus agenda" aria-label="Hapus agenda" onclick="deletePlan(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">×</span><span>Hapus</span></button> '+(x.status==="plan"?'<button type="button" class="btn btn-sm btn-primary action-btn action-confirm" title="Konfirmasi agenda" aria-label="Confirm agenda" onclick="setStatus(\''+x.id+'\',\'confirmed\')"><span class="action-icon" aria-hidden="true">✓</span><span>Confirm</span></button>':"")+(x.status==="confirmed"?'<button type="button" class="btn btn-sm btn-success action-btn action-done" title="Tandai selesai" aria-label="Done agenda" onclick="setStatus(\''+x.id+'\',\'done\')"><span class="action-icon" aria-hidden="true">✓</span><span>Done</span></button>':"")+(x.status!=="cancel"?'<button type="button" class="btn btn-sm btn-danger action-btn action-cancel" title="Batalkan agenda" aria-label="Cancel agenda" onclick="setStatus(\''+x.id+'\',\'cancel\')"><span class="action-icon" aria-hidden="true">⊘</span><span>Cancel</span></button>':""):'')+(currentUser.username==="kipl"&&x.status==="confirmed"?'<button type="button" class="btn btn-sm btn-primary action-btn" title="Update hasil meeting" aria-label="Update hasil meeting" onclick="openDoneModal(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">✎</span><span>Update</span></button><button type="button" class="btn btn-sm btn-success action-btn" title="Selesaikan meeting" aria-label="Selesaikan meeting" onclick="openDoneModal(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">✓</span><span>Selesaikan</span></button>':"")+'<button type="button" class="btn btn-sm btn-secondary action-btn action-pdf" title="Unduh laporan PDF" aria-label="Unduh laporan PDF" onclick="generatePDF(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">▤</span><span>PDF</span></button></div></td>':'')+'</tr>';
  }).join("")+'</tbody></table>';
 }
+function trendMonthKey(value){
+ if(!value)return "";
+ var v=String(value).trim();
+ var iso=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+ if(iso)return iso[1]+"-"+String(iso[2]).padStart(2,"0");
+ var dmy=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+ if(dmy)return dmy[3]+"-"+String(dmy[2]).padStart(2,"0");
+ return "";
+}
+function trendMonthLabel(key){
+ var p=key.split("-");
+ return new Date(Number(p[0]),Number(p[1])-1,1).toLocaleDateString("id-ID",{month:"short",year:"2-digit"});
+}
+function renderCustomerTrend(){
+ var chart=$("customerTrendChart");
+ if(!chart)return;
+ var valid=data.filter(function(x){return x.status!=="cancel"&&trendMonthKey(x.date)});
+ if(!valid.length){
+   chart.innerHTML='<div class="trend-empty">Belum ada data kunjungan customer untuk ditampilkan.<br>Grafik akan terbentuk otomatis setelah data canvasing tersedia.</div>';
+   $("trendSummary").textContent="Belum ada data kunjungan";
+   return;
+ }
+ var monthSet={};
+ valid.forEach(function(x){monthSet[trendMonthKey(x.date)]=true});
+ var months=Object.keys(monthSet).sort().slice(-6);
+ // Keep six consecutive calendar months so missing months are shown as zero, not hidden.
+ var last=months[months.length-1].split("-").map(Number);
+ var cursor=new Date(last[0],last[1]-1,1);
+ months=[];
+ for(var i=5;i>=0;i--){
+   var d=new Date(cursor.getFullYear(),cursor.getMonth()-i,1);
+   months.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));
+ }
+ var values=months.map(function(m){
+   var rows=valid.filter(function(x){return trendMonthKey(x.date)===m});
+   var unique={};
+   rows.forEach(function(x){var k=String(x.customer||"").trim().toLowerCase();if(k)unique[k]=true});
+   return {key:m,label:trendMonthLabel(m),visits:rows.length,customers:Object.keys(unique).length};
+ });
+ var max=Math.max(1,...values.map(function(v){return Math.max(v.visits,v.customers)}));
+ var W=760,H=230,L=42,R=18,T=18,B=38,plotW=W-L-R,plotH=H-T-B;
+ function xAt(i){return L+(values.length===1?plotW/2:i*plotW/(values.length-1))}
+ function yAt(v){return T+plotH-(v/max)*plotH}
+ function lineFor(key){return values.map(function(v,i){return xAt(i)+","+yAt(v[key])}).join(" ")}
+ var grid="";
+ for(var g=0;g<=4;g++){
+   var val=Math.round(max*g/4),y=yAt(val);
+   grid+='<line x1="'+L+'" y1="'+y+'" x2="'+(W-R)+'" y2="'+y+'" stroke="#e6edf4" stroke-width="1"/><text x="'+(L-10)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="#7a8a9c">'+val+'</text>';
+ }
+ var labels=values.map(function(v,i){return '<text x="'+xAt(i)+'" y="'+(H-12)+'" text-anchor="middle" font-size="10" fill="#617287">'+esc(v.label)+'</text>'}).join("");
+ var dots="";
+ values.forEach(function(v,i){
+   var x=xAt(i);
+   dots+='<circle cx="'+x+'" cy="'+yAt(v.visits)+'" r="4.5" fill="#17365d" stroke="#ffffff" stroke-width="2"><title>'+esc(v.label)+': '+v.visits+' kunjungan</title></circle>';
+   dots+='<circle cx="'+x+'" cy="'+yAt(v.customers)+'" r="4" fill="#f0bd00" stroke="#ffffff" stroke-width="2"><title>'+esc(v.label)+': '+v.customers+' customer unik</title></circle>';
+ });
+ chart.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" aria-hidden="true"><defs><linearGradient id="trendArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#17365d" stop-opacity=".16"/><stop offset="100%" stop-color="#17365d" stop-opacity="0"/></linearGradient></defs>'+grid+'<polygon points="'+L+','+(T+plotH)+' '+lineFor("visits")+' '+(W-R)+','+(T+plotH)+'" fill="url(#trendArea)"/><polyline points="'+lineFor("visits")+'" fill="none" stroke="#17365d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><polyline points="'+lineFor("customers")+'" fill="none" stroke="#f0bd00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="6 4"/>'+dots+labels+'</svg>';
+ var totalVisits=values.reduce(function(a,v){return a+v.visits},0);
+ var latest=values[values.length-1];
+ $("trendSummary").textContent="6 bulan terakhir: "+totalVisits+" kunjungan • Bulan terbaru: "+latest.visits+" kunjungan / "+latest.customers+" customer unik";
+}
+
 function renderDashboard(){
  var total=data.length,plan=data.filter(function(x){return x.status==="plan"}).length,con=data.filter(function(x){return x.status==="confirmed"}).length,done=data.filter(function(x){return x.status==="done"}).length,cancel=data.filter(function(x){return x.status==="cancel"}).length,budget=data.reduce(function(a,x){return a+Number(x.budget||0)},0);
  $("mTotal").textContent=total;$("mPlan").textContent=plan;$("mConfirmed").textContent=con;$("mDone").textContent=done;if($("mBudget"))$("mBudget").textContent=formatRp(budget);
@@ -1059,6 +1163,7 @@ function renderDashboard(){
  var upcoming=data.filter(function(x){return x.date&&x.status!=="cancel"}).sort(sortNearestMeeting).slice(0,5);
  $("upcoming").innerHTML=upcoming.length?upcoming.map(function(x){return '<div class="event"><strong>'+fmtDate(x.date)+' · '+esc(x.customer)+'</strong><div class="event-time">⏰ '+esc(timeRange(x))+' · '+esc(x.location)+' · '+statusBadge(x.status)+'</div><small>PIC: '+esc(x.pic)+'</small></div>'}).join(""):'<div class="empty">Belum ada agenda.</div>';
  $("recentTable").innerHTML=renderRows(data.slice().sort(function(a,b){return b.updated.localeCompare(a.updated)}).slice(0,6),false);
+ renderCustomerTrend();
 }
 function renderTable(){
  var q=$("search").value.toLowerCase(),s=$("filterStatus").value,m=$("filterMonth").value;
