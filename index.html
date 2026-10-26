@@ -548,13 +548,12 @@ function extractMeetingTime(value){
  var hm=v.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
  if(hm)return String(hm[1]).padStart(2,"0")+":"+hm[2];
 
- // Compatibility with old Apps Script deployments returning a time as a Date ISO.
- // Example: 1899-12-30T02:00:00.000Z -> 09:00 WIB.
+ // Legacy Apps Script Date serialization. Do not apply a fixed timezone offset here:
+ // it can shift a time that has already been normalized by Sheets/Apps Script.
+ // The backend V3 returns display strings, so this branch is only a fallback.
  var oldTime=v.match(/^(?:1899-12-29|1899-12-30|1899-12-31)T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?Z$/i);
  if(oldTime){
-   var mins=(Number(oldTime[1])*60)+Number(oldTime[2])+420;
-   mins=((mins%1440)+1440)%1440;
-   return String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
+   return String(oldTime[1]).padStart(2,"0")+":"+String(oldTime[2]).padStart(2,"0");
  }
 
  // Numeric Google Sheets time fraction.
