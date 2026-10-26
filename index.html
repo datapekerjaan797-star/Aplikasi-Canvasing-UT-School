@@ -316,6 +316,24 @@ input:focus,select:focus,textarea:focus{border-color:#4f83b5!important;box-shado
 .metric:hover{transform:translateY(-2px);box-shadow:0 15px 35px rgba(13,36,64,.14)}
 .metric .icon,.metric-icon{color:#17365d;background:#fff4bd;border-radius:12px}
 
+
+/* V20 action controls: icon and label are always visible */
+.table th:last-child{min-width:250px}
+.table td:last-child{min-width:250px}
+.actions{display:flex;align-items:center;justify-content:flex-start;gap:6px;flex-wrap:wrap;min-width:230px;max-width:360px}
+.actions .action-btn{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;min-width:64px;min-height:34px;padding:7px 10px!important;white-space:nowrap;line-height:1.15;font-size:12px;font-weight:800;visibility:visible;opacity:1}
+.actions .action-icon{display:inline-flex;align-items:center;justify-content:center;flex:0 0 13px;width:13px;height:14px;font-size:14px;line-height:1;font-weight:900}
+.actions .action-edit,.actions .action-pdf{background:#edf3f9!important;color:#17365d!important}
+.actions .action-delete,.actions .action-cancel{background:#b83232!important;color:#fff!important}
+.actions .action-confirm{background:#17365d!important;color:#fff!important}
+.actions .action-done{background:#16794b!important;color:#fff!important}
+.actions .action-btn:hover{filter:brightness(.96);transform:translateY(-1px)}
+@media(max-width:900px){
+ .table{min-width:1120px}
+ .table th:last-child,.table td:last-child{min-width:260px}
+ .actions{min-width:240px}
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -944,7 +962,9 @@ function savePlan(e){
  e.preventDefault();
  var id=$("editId").value,old=data.find(function(x){return x.id===id}),admin=currentUser.username==="admin";
  if(id&&!admin){toast("Member hanya dapat menambahkan Plan baru.");return}
- var st=$("startTime").value,en=$("endTime").value;
+ var st=String($("startTime").value||"").trim(),en=String($("endTime").value||"").trim();
+ // Keep the exact HH:mm values entered in the form; do not derive time from date/timestamps.
+ if((st&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(st))||(en&&!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(en))){toast("Format jam harus HH:mm.");return}
  if(st&&en&&st>=en){toast("Jam selesai harus lebih besar dari jam mulai.");return}
  var accom=document.querySelector('input[name="accom"]:checked').value;
  var meal=document.querySelector('input[name="meal"]:checked').value;
@@ -1029,7 +1049,7 @@ function renderRows(rows,full){
  if(!rows.length)return '<div class="empty">Belum ada data.</div>';
  return '<table class="table"><thead><tr><th>Tanggal</th><th>PIC</th><th>Customer</th><th>Lokasi</th><th>Status</th>'+(full?"<th>Akomodasi</th><th>Konsumsi</th><th>Follow-up</th><th>Aksi</th>":"")+'</tr></thead><tbody>'+rows.map(function(x){
    return '<tr><td class="date-cell"><strong class="meeting-date">'+fmtDate(x.date)+'</strong><span class="meeting-time">⏰ '+esc(timeRange(x))+'</span></td><td>'+esc(x.pic)+'</td><td><strong>'+esc(x.customer)+'</strong><br><span class="mini">'+esc(x.info||"")+'</span></td><td>'+esc(x.location)+'</td><td>'+timelineHTML(x)+'<div style="margin-top:6px">'+statusBadge(x.status)+'</div></td>'+
-   (full?'<td>'+esc(x.accom==="Ya"?(x.accomType||"Ya")+" • "+formatRp(x.accomCost):"Tidak")+'</td><td>'+esc(x.meal==="Ya"?(x.mealType||"Ya")+" • "+x.mealQty+" porsi":"Tidak")+'</td><td>'+esc(x.followup||"-")+'</td><td><div class="actions">'+(currentUser.username==="admin"?'<button class="btn btn-sm btn-secondary" onclick="openModal(\''+x.id+'\')">Edit</button> <button class="btn btn-sm btn-danger" onclick="deletePlan(\''+x.id+'\')">Hapus</button> '+(x.status==="plan"?'<button class="btn btn-sm btn-primary" onclick="setStatus(\''+x.id+'\',\'confirmed\')">Confirm</button>':"")+(x.status==="confirmed"?'<button class="btn btn-sm btn-success" onclick="setStatus(\''+x.id+'\',\'done\')">Done</button>':"")+(x.status!=="cancel"?'<button class="btn btn-sm btn-danger" onclick="setStatus(\''+x.id+'\',\'cancel\')">Cancel</button>':""):'')+(currentUser.username==="kipl"&&x.status==="confirmed"?'<button class="btn btn-sm btn-primary" onclick="openDoneModal(\''+x.id+'\')">✎ Update</button> <button class="btn btn-sm btn-success" onclick="openDoneModal(\''+x.id+'\')">✓ Selesaikan</button>':"")+'<button class="btn btn-sm btn-secondary" onclick="generatePDF(\''+x.id+'\')">PDF</button></div></td>':'')+'</tr>';
+   (full?'<td>'+esc(x.accom==="Ya"?(x.accomType||"Ya")+" • "+formatRp(x.accomCost):"Tidak")+'</td><td>'+esc(x.meal==="Ya"?(x.mealType||"Ya")+" • "+x.mealQty+" porsi":"Tidak")+'</td><td>'+esc(x.followup||"-")+'</td><td><div class="actions">'+(currentUser.username==="admin"?'<button type="button" class="btn btn-sm btn-secondary action-btn action-edit" title="Edit agenda" aria-label="Edit agenda" onclick="openModal(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">✎</span><span>Edit</span></button><button type="button" class="btn btn-sm btn-danger action-btn action-delete" title="Hapus agenda" aria-label="Hapus agenda" onclick="deletePlan(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">×</span><span>Hapus</span></button> '+(x.status==="plan"?'<button type="button" class="btn btn-sm btn-primary action-btn action-confirm" title="Konfirmasi agenda" aria-label="Confirm agenda" onclick="setStatus(\''+x.id+'\',\'confirmed\')"><span class="action-icon" aria-hidden="true">✓</span><span>Confirm</span></button>':"")+(x.status==="confirmed"?'<button type="button" class="btn btn-sm btn-success action-btn action-done" title="Tandai selesai" aria-label="Done agenda" onclick="setStatus(\''+x.id+'\',\'done\')"><span class="action-icon" aria-hidden="true">✓</span><span>Done</span></button>':"")+(x.status!=="cancel"?'<button type="button" class="btn btn-sm btn-danger action-btn action-cancel" title="Batalkan agenda" aria-label="Cancel agenda" onclick="setStatus(\''+x.id+'\',\'cancel\')"><span class="action-icon" aria-hidden="true">⊘</span><span>Cancel</span></button>':""):'')+(currentUser.username==="kipl"&&x.status==="confirmed"?'<button type="button" class="btn btn-sm btn-primary action-btn" title="Update hasil meeting" aria-label="Update hasil meeting" onclick="openDoneModal(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">✎</span><span>Update</span></button><button type="button" class="btn btn-sm btn-success action-btn" title="Selesaikan meeting" aria-label="Selesaikan meeting" onclick="openDoneModal(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">✓</span><span>Selesaikan</span></button>':"")+'<button type="button" class="btn btn-sm btn-secondary action-btn action-pdf" title="Unduh laporan PDF" aria-label="Unduh laporan PDF" onclick="generatePDF(\''+x.id+'\')"><span class="action-icon" aria-hidden="true">▤</span><span>PDF</span></button></div></td>':'')+'</tr>';
  }).join("")+'</tbody></table>';
 }
 function renderDashboard(){
