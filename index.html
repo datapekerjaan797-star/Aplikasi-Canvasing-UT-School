@@ -242,6 +242,80 @@ input:focus,select:focus,textarea:focus{border-color:var(--uts-blue)!important;b
 
 /* Spreadsheet source indicator */
 #gsStatusText{font-weight:700;letter-spacing:.1px}
+
+/* V19: refined UT corporate visual system */
+:root{
+  --navy:#17365d;
+  --navy2:#0d2440;
+  --blue:#1f5f9f;
+  --sky:#eaf2f9;
+  --yellow:#f6c400;
+  --yellow-soft:#fff6cc;
+  --ink:#18283c;
+  --muted:#617287;
+  --line:#d9e2ec;
+  --bg:#f3f6fa;
+  --white:#fff;
+  --shadow:0 12px 32px rgba(13,36,64,.10);
+  --r:16px;
+}
+body{background:radial-gradient(circle at 8% 0%,#e6eef7 0,transparent 34%),var(--bg);color:var(--ink)}
+h1,h2,h3{letter-spacing:-.025em}
+.pagehead h2{color:var(--navy2);font-weight:800}
+.pagehead p{color:var(--muted)}
+.btn,.nav button,.icon-btn{transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease}
+.btn:hover,.nav button:hover,.icon-btn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(13,36,64,.12)}
+.btn-primary{background:linear-gradient(135deg,var(--navy),var(--blue));border-color:var(--navy)}
+.btn-primary:hover{background:linear-gradient(135deg,var(--navy2),var(--navy))}
+.btn-success{background:#16794b;border-color:#16794b}
+.btn-danger{background:#b83232;border-color:#b83232}
+.panel,.metric,.card,.table-wrap{border-color:var(--line);box-shadow:var(--shadow)}
+.table{border-collapse:separate;border-spacing:0}
+.table thead th{background:linear-gradient(180deg,#edf3f9,#e3edf6);color:var(--navy2);font-size:12px;letter-spacing:.055em;text-transform:uppercase;border-bottom:2px solid #c8d7e6}
+.table tbody tr{background:rgba(255,255,255,.78);transition:background .18s ease}
+.table tbody tr:hover{background:#fff9df}
+.table tbody td{border-bottom:1px solid #e1e8f0;vertical-align:top}
+.date-cell{min-width:145px}
+.meeting-date{display:block;color:var(--navy2);font-size:15px;font-weight:800;line-height:1.35;white-space:nowrap}
+.meeting-time{display:flex;align-items:center;gap:7px;margin-top:7px;color:#1e5687;font-size:12px;font-weight:700;line-height:1.4;white-space:nowrap}
+.meeting-time:before{content:"";display:inline-block;width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--yellow);box-shadow:0 0 0 3px rgba(246,196,0,.2)}
+.badge{border-radius:999px;padding:5px 9px;font-weight:800;font-size:10px;letter-spacing:.035em}
+.badge.plan{background:#fff4c2;color:#765900;border:1px solid #f0d46b}
+.badge.confirmed{background:#e1efff;color:#174f85;border:1px solid #bad7f5}
+.badge.done{background:#dff5e8;color:#17633c;border:1px solid #b7e4c9}
+.badge.cancel{background:#fde8e8;color:#9f2929;border:1px solid #f4c4c4}
+.timeline{display:flex;align-items:center;gap:5px;min-width:150px;flex-wrap:wrap}
+.timeline-step{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#718096;background:#edf1f5;border-radius:999px;padding:4px 7px}
+.timeline-step.active{color:#17365d;background:#fff0a6;box-shadow:inset 0 0 0 1px #efd45c}
+.timeline-step.done{color:#17633c;background:#dff5e8}
+.timeline-step .timeline-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.actions{display:flex;gap:5px;flex-wrap:wrap;min-width:160px}
+.actions .btn{font-size:11px;padding:6px 8px;border-radius:8px}
+input:focus,select:focus,textarea:focus{border-color:#4f83b5!important;box-shadow:0 0 0 3px rgba(31,95,159,.12)}
+@media(max-width:760px){
+ .table{min-width:780px}
+ .date-cell{min-width:138px}
+ .meeting-date{font-size:14px}
+ .meeting-time{font-size:11px}
+ .table tbody td{padding:13px 10px}
+}
+
+
+/* Refined progress indicator matching the existing timeline markup */
+.timeline-mini{display:flex;align-items:center;gap:4px;min-width:150px;margin:2px 0 5px}
+.timeline-mini .step{display:block;height:6px;flex:1;min-width:22px;border-radius:99px;background:#dbe3ec;box-shadow:inset 0 0 0 1px rgba(23,54,93,.04)}
+.timeline-mini .step.active{background:linear-gradient(90deg,#f6c400,#e8ad00);box-shadow:0 0 0 2px rgba(246,196,0,.13)}
+.timeline-mini .step.done{background:linear-gradient(90deg,#23945b,#16794b)}
+.step-labels{display:flex;justify-content:space-between;gap:5px;min-width:150px;color:#66778b;font-size:9px;font-weight:700;line-height:1.3}
+.step-labels span{white-space:nowrap}
+.nav button.active{background:linear-gradient(90deg,#17365d,#24578c);color:#fff;box-shadow:inset 3px 0 0 #f6c400}
+.nav button.active:before{content:"";display:inline-block;width:5px;height:5px;background:#f6c400;border-radius:50%;margin-right:7px;vertical-align:middle}
+.logo-space{border-color:#e2c34b;background:linear-gradient(135deg,#f8fbff,#fff8d9)}
+.logo-space img{max-width:90%;max-height:64px;object-fit:contain}
+.metric{border-top:3px solid #e9bc00;transition:transform .18s ease,box-shadow .18s ease}
+.metric:hover{transform:translateY(-2px);box-shadow:0 15px 35px rgba(13,36,64,.14)}
+.metric .icon,.metric-icon{color:#17365d;background:#fff4bd;border-radius:12px}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -430,11 +504,21 @@ function formatRp(n){return new Intl.NumberFormat("id-ID",{style:"currency",curr
 function fmtDate(s){
  if(!s)return "-";
  var v=String(s).trim();
- // Google Sheets may return a display date as DD/MM/YYYY.
- var dmy=v.match(/^(\\d{1,2})[\\/.-](\\d{1,2})[\\/.-](\\d{4})$/);
+
+ // Display dates from Sheets (DD/MM/YYYY or DD-MM-YYYY).
+ var dmy=v.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
  if(dmy)return String(dmy[1]).padStart(2,"0")+"/"+String(dmy[2]).padStart(2,"0")+"/"+dmy[3];
- // ISO date: YYYY-MM-DD...
- var iso=v.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);
+
+ // A date-only Sheets cell may serialize as midnight WIB in UTC,
+ // e.g. 2026-10-28T17:00:00.000Z means 29/10/2026 in WIB.
+ var isoUtc=v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?Z$/i);
+ if(isoUtc){
+   var dt=new Date(Date.UTC(Number(isoUtc[1]),Number(isoUtc[2])-1,Number(isoUtc[3]),Number(isoUtc[4]),Number(isoUtc[5]),Number(isoUtc[6]||0))+7*60*60*1000);
+   return String(dt.getUTCDate()).padStart(2,"0")+"/"+String(dt.getUTCMonth()+1).padStart(2,"0")+"/"+dt.getUTCFullYear();
+ }
+
+ // ISO date or timestamp without Z: keep the calendar date as supplied.
+ var iso=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:T.*)?$/);
  if(iso)return String(iso[3]).padStart(2,"0")+"/"+String(iso[2]).padStart(2,"0")+"/"+iso[1];
  return v;
 }
@@ -442,43 +526,39 @@ function extractMeetingTime(value){
  var v=value==null?"":String(value).trim();
  if(!v)return "";
 
- // PRIMARY: Google Sheets display value from column E/F.
- // Examples: 9:00, 13:30, 14:30, 15:00.
- var hm=v.match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
- if(hm){
-   return String(hm[1]).padStart(2,"0")+":"+hm[2];
- }
+ // Preferred: exact display value from Google Sheets columns E and F.
+ var hm=v.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+ if(hm)return String(hm[1]).padStart(2,"0")+":"+hm[2];
 
- // BACKWARD COMPATIBILITY: old Apps Script deployments may still return
- // a Date serialized as 1899-12-30Txx:mm:ss.000Z. Convert that legacy value
- // to WIB only when it is unmistakably a time-only date.
- var iso=v.match(/^(?:1899-12-29|1899-12-30|1899-12-31)T(\\d{2}):(\\d{2})(?::(\\d{2}))?(?:\\.\\d+)?Z$/i);
- if(iso){
-   var mins=(Number(iso[1])*60)+Number(iso[2])+420;
+ // Compatibility with old Apps Script deployments returning a time as a Date ISO.
+ // Example: 1899-12-30T02:00:00.000Z -> 09:00 WIB.
+ var oldTime=v.match(/^(?:1899-12-29|1899-12-30|1899-12-31)T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?Z$/i);
+ if(oldTime){
+   var mins=(Number(oldTime[1])*60)+Number(oldTime[2])+420;
    mins=((mins%1440)+1440)%1440;
    return String(Math.floor(mins/60)).padStart(2,"0")+":"+String(mins%60).padStart(2,"0");
  }
 
- // Numeric Sheets time fraction fallback.
- var num=Number(v);
- if(isFinite(num)&&num>=0&&num<1){
-   var total=Math.round(num*24*60);
-   return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+ // Numeric Google Sheets time fraction.
+ if(/^\d+(?:\.\d+)?$/.test(v)){
+   var num=Number(v);
+   if(isFinite(num)&&num>=0&&num<1){
+     var total=Math.round(num*24*60);
+     return String(Math.floor(total/60)%24).padStart(2,"0")+":"+String(total%60).padStart(2,"0");
+   }
  }
 
- // Last-resort legacy text containing a clock value.
- var generic=v.match(/(?:^|T|\\s)(\\d{1,2}):(\\d{2})(?::\\d{2})?/);
+ // Last-resort legacy value containing a time.
+ var generic=v.match(/(?:^|T|\s)(\d{1,2}):(\d{2})(?::\d{2})?/);
  return generic?String(generic[1]).padStart(2,"0")+":"+generic[2]:"";
 }
 function timeRange(x){
- // IMPORTANT: display only the normalized Google Sheets E/F values:
- // E = startTime, F = endTime.
  var st=extractMeetingTime(x&&x.startTime);
  var en=extractMeetingTime(x&&x.endTime);
- if(st&&en)return st+" - "+en+" WIB";
+ if(st&&en)return st+" – "+en+" WIB";
  if(st)return st+" WIB";
  if(en)return en+" WIB";
- return "-";
+ return "Jam belum tersedia";
 }
 function meetingDistance(x){
  var today=new Date(); today.setHours(0,0,0,0);
